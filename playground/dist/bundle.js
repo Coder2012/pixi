@@ -54,7 +54,15 @@
 	
 	var _player2 = _interopRequireDefault(_player);
 	
-	var _steering = __webpack_require__(181);
+	var _playerBullet = __webpack_require__(182);
+	
+	var _playerBullet2 = _interopRequireDefault(_playerBullet);
+	
+	var _bulletPool = __webpack_require__(183);
+	
+	var _bulletPool2 = _interopRequireDefault(_bulletPool);
+	
+	var _steering = __webpack_require__(184);
 	
 	var _steering2 = _interopRequireDefault(_steering);
 	
@@ -198,7 +206,12 @@
 	// }
 	
 	var enemy = void 0,
-	    ship = void 0;
+	    ship = void 0,
+	    bullet = void 0,
+	    fire = void 0,
+	    pool = void 0;
+	var colCategory = 0x001;
+	var colCategory2 = 0x002;
 	var loader = PIXI.loader;
 	loader.add("images/data.json").load(setup);
 	
@@ -212,7 +225,15 @@
 	
 	    // ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
 	    var texture = loader.resources["images/data.json"].textures["wship-4.png"];
-	    ship = new _player2.default(800, window.innerHeight - 100, 34, 72, texture);
+	    ship = new _player2.default(colCategory);
+	    ship.init(800, window.innerHeight - 100, 34, 72, texture);
+	
+	    var tex = PIXI.loader.resources["images/data.json"].textures["player_bullet.png"];
+	    bullet = new _playerBullet2.default(colCategory2);
+	    bullet.init(0, 0, 16, 32, tex);
+	
+	    pool = new _bulletPool2.default(engine, stage);
+	    pool.init();
 	
 	    World.addBody(engine.world, ship.body);
 	    stage.addChild(ship.sprite);
@@ -235,7 +256,6 @@
 	    if (rightKey.isDown) {
 	        Body.applyForce(ship.body, ship.body.position, { x: 0.003, y: 0 });
 	    }
-	
 	    // Body.setVelocity(ship.body, {x: 0, y: 0});
 	
 	    // ship.sprite.position = ship.body.position;
@@ -243,6 +263,7 @@
 	    enemy.sprite.rotation = enemy.body.angle;
 	
 	    ship.update();
+	    pool.update();
 	
 	    // for(var b in items) {
 	    //     items[b].sprite.position = items[b].body.position;
@@ -269,6 +290,12 @@
 	
 	var leftKey = keyboard(37);
 	var rightKey = keyboard(39);
+	var spaceKey = keyboard(32);
+	
+	spaceKey.release = function () {
+	    console.log('fire: ', ship.body.position);
+	    pool.get(ship.body.position);
+	};
 	
 	function keyboard(keyCode) {
 	    var key = {};
@@ -37654,6 +37681,65 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _physicsSprite = __webpack_require__(181);
+	
+	var _physicsSprite2 = _interopRequireDefault(_physicsSprite);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	// Matter.js module aliases
+	var Engine = Matter.Engine,
+	    World = Matter.World,
+	    Body = Matter.Body,
+	    Bodies = Matter.Bodies,
+	    Events = Matter.Events,
+	    Vector = Matter.Vector,
+	    Composite = Matter.Composite;
+	
+	var Player = function (_PhysicsSprite) {
+	    _inherits(Player, _PhysicsSprite);
+	
+	    function Player(category) {
+	        _classCallCheck(this, Player);
+	
+	        return _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, category));
+	    }
+	
+	    _createClass(Player, [{
+	        key: 'init',
+	        value: function init(x, y, width, height, texture) {
+	            _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'init', this).call(this, x, y, width, height, texture);
+	        }
+	    }, {
+	        key: 'spawn',
+	        value: function spawn() {}
+	    }]);
+	
+	    return Player;
+	}(_physicsSprite2.default);
+	
+	exports.default = Player;
+
+/***/ },
+/* 181 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
 	var _pixi = __webpack_require__(1);
 	
 	var PIXI = _interopRequireWildcard(_pixi);
@@ -37671,21 +37757,26 @@
 	    Vector = Matter.Vector,
 	    Composite = Matter.Composite;
 	
-	var Player = function () {
-	    function Player(x, y, width, height, texture) {
-	        _classCallCheck(this, Player);
+	var PhysicsSprite = function () {
+	    function PhysicsSprite(category) {
+	        _classCallCheck(this, PhysicsSprite);
 	
-	        this.x = x;
-	        this.y = y;
-	        this.width = width;
-	        this.height = height;
-	        this.texture = texture;
-	
-	        this.createPhysics();
-	        this.createSprite();
+	        this.category = category;
 	    }
 	
-	    _createClass(Player, [{
+	    _createClass(PhysicsSprite, [{
+	        key: 'init',
+	        value: function init(x, y, width, height, texture) {
+	            this.x = x;
+	            this.y = y;
+	            this.width = width;
+	            this.height = height;
+	            this.texture = texture;
+	
+	            this.createPhysics();
+	            this.createSprite();
+	        }
+	    }, {
 	        key: 'createPhysics',
 	        value: function createPhysics() {
 	            var options = {
@@ -37693,7 +37784,10 @@
 	                friction: 1,
 	                restitution: 0,
 	                inertia: Infinity,
-	                mass: 1
+	                mass: 1,
+	                collisionFilter: {
+	                    category: this.category
+	                }
 	            };
 	
 	            this._body = Bodies.rectangle(this.x, this.y, this.width, this.height, options);
@@ -37729,13 +37823,166 @@
 	        }
 	    }]);
 	
-	    return Player;
+	    return PhysicsSprite;
 	}();
 	
-	exports.default = Player;
+	exports.default = PhysicsSprite;
 
 /***/ },
-/* 181 */
+/* 182 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _physicsSprite = __webpack_require__(181);
+	
+	var _physicsSprite2 = _interopRequireDefault(_physicsSprite);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	// Matter.js module aliases
+	var Engine = Matter.Engine,
+	    World = Matter.World,
+	    Body = Matter.Body,
+	    Bodies = Matter.Bodies,
+	    Events = Matter.Events,
+	    Vector = Matter.Vector,
+	    Composite = Matter.Composite;
+	
+	var PlayerBullet = function (_PhysicsSprite) {
+	    _inherits(PlayerBullet, _PhysicsSprite);
+	
+	    function PlayerBullet(category) {
+	        _classCallCheck(this, PlayerBullet);
+	
+	        return _possibleConstructorReturn(this, (PlayerBullet.__proto__ || Object.getPrototypeOf(PlayerBullet)).call(this, category));
+	    }
+	
+	    _createClass(PlayerBullet, [{
+	        key: 'init',
+	        value: function init(x, y, width, height, texture) {
+	            _get(PlayerBullet.prototype.__proto__ || Object.getPrototypeOf(PlayerBullet.prototype), 'init', this).call(this, x, y, width, height, texture);
+	            this.alive = false;
+	        }
+	    }, {
+	        key: 'spawn',
+	        value: function spawn(position) {
+	            this.alive = true;
+	            Body.setPosition(this.body, position);
+	            console.log('spawn');
+	        }
+	    }, {
+	        key: 'update',
+	        value: function update() {
+	            _get(PlayerBullet.prototype.__proto__ || Object.getPrototypeOf(PlayerBullet.prototype), 'update', this).call(this);
+	            Body.applyForce(this.body, this.body.position, { x: 0, y: -0.008 });
+	        }
+	    }]);
+	
+	    return PlayerBullet;
+	}(_physicsSprite2.default);
+	
+	exports.default = PlayerBullet;
+
+/***/ },
+/* 183 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _pixi = __webpack_require__(1);
+	
+	var PIXI = _interopRequireWildcard(_pixi);
+	
+	var _playerBullet = __webpack_require__(182);
+	
+	var _playerBullet2 = _interopRequireDefault(_playerBullet);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	// Matter.js module aliases
+	var Engine = Matter.Engine,
+	    World = Matter.World,
+	    Body = Matter.Body,
+	    Bodies = Matter.Bodies,
+	    Events = Matter.Events,
+	    Vector = Matter.Vector,
+	    Composite = Matter.Composite;
+	
+	var BulletPool = function () {
+		function BulletPool(engine, container) {
+			_classCallCheck(this, BulletPool);
+	
+			this.engine = engine;
+			this.container = container;
+			this.size = 8;
+			this.pool = [];
+			this._bullet;
+			this.texture = PIXI.loader.resources["images/data.json"].textures["player_bullet.png"];
+		}
+	
+		_createClass(BulletPool, [{
+			key: 'init',
+			value: function init() {
+				for (var i = 0; i < this.size; i++) {
+					var bullet = new _playerBullet2.default();
+					bullet.init(0, 0, 16, 32, this.texture);
+					this.pool[i] = bullet;
+	
+					World.addBody(this.engine.world, bullet.body);
+					this.container.addChild(bullet.sprite);
+				}
+			}
+		}, {
+			key: 'get',
+			value: function get(position) {
+				if (!this.pool[this.size - 1].alive) {
+					this.pool[this.size - 1].spawn(position);
+					this.pool.unshift(this.pool.pop());
+				}
+			}
+		}, {
+			key: 'update',
+			value: function update() {
+				this.pool.forEach(function (bullet) {
+					if (bullet.alive) {
+						bullet.update();
+					}
+				});
+			}
+		}]);
+	
+		return BulletPool;
+	}();
+	
+	exports.default = BulletPool;
+
+/***/ },
+/* 184 */
 /***/ function(module, exports) {
 
 	"use strict";
