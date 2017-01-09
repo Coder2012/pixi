@@ -1,4 +1,4 @@
-var Engine = Matter.Engine,
+let Engine = Matter.Engine,
     World = Matter.World,
     Body = Matter.Body,
     Bodies = Matter.Bodies,
@@ -12,11 +12,11 @@ class Steering {
 	}
 
 	seek(desiredVelocity, velocity) {
-	    var steering = Vector.mult(Vector.sub(desiredVelocity, velocity), 2);
+	    let steering = Vector.mult(Vector.sub(desiredVelocity, velocity), 2);
 
 	    Body.setVelocity(this.entity.body, steering);
 
-	    var angle = Math.atan2(this.entity.body.velocity.y, this.entity.body.velocity.x);
+	    let angle = Math.atan2(this.entity.body.velocity.y, this.entity.body.velocity.x);
 	    Body.setAngle(this.entity.body, angle);
 	}
 }

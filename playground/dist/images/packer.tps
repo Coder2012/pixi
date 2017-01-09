@@ -104,7 +104,7 @@
         <key>algorithmSettings</key>
         <struct type="AlgorithmSettings">
             <key>algorithm</key>
-            <enum type="AlgorithmSettings::AlgorithmId">MaxRects</enum>
+            <enum type="AlgorithmSettings::AlgorithmId">Basic</enum>
             <key>freeSizeMode</key>
             <enum type="AlgorithmSettings::AlgorithmFreeSizeMode">Best</enum>
             <key>sizeConstraints</key>
@@ -635,6 +635,19 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">../../images/player_bullet.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>4,8,8,16</rect>
+                <key>scale9Paddings</key>
+                <rect>4,8,8,16</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
         </map>
         <key>fileList</key>
         <array>
@@ -680,6 +693,7 @@
             <filename>../processed/blueship3.png</filename>
             <filename>../processed/blueship4.png</filename>
             <filename>../processed/F5S1.png</filename>
+            <filename>../../images/player_bullet.png</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>

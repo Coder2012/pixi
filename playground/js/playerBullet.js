@@ -9,18 +9,26 @@ var Engine = Matter.Engine,
     Vector = Matter.Vector,
     Composite = Matter.Composite;
 
-class Player extends PhysicsSprite {
-    constructor(category) {
-        super(category);
-    }
+class PlayerBullet extends PhysicsSprite {
+	constructor(category) {
+		super(category);
+	}
 
     init(x, y, width, height, texture) {
         super.init(x, y, width, height, texture)
+    	this.alive = false;
     }
 
-    spawn() {
+    spawn(position) {
+    	this.alive = true;
+    	Body.setPosition(this.body, position);
+    	console.log('spawn');
+    }
 
+    update() {
+    	super.update();
+    	Body.applyForce(this.body, this.body.position, {x: 0, y: -0.008});
     }
 }
 
-export default Player;
+export default PlayerBullet;

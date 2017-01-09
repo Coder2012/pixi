@@ -1,4 +1,7 @@
 import * as PIXI from 'pixi.js';
+import Player from './player';
+import PlayerBullet from './playerBullet.js';
+import BulletPool from './bulletPool.js';
 import Steering from './steering';
 
 // Matter.js module aliases
@@ -34,7 +37,7 @@ var id = 0,
     hit,
     prevId = id;
 
-var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight,{backgroundColor : 0x1099bb});
+var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight,{backgroundColor : 0x000000});
 var stage = new PIXI.Container();
 document.body.appendChild(renderer.view);
 
@@ -85,20 +88,20 @@ function PhysicsObject(index) {
     return box;
 };
 
-var createItem = function(i) {
-    return {
-        body: new PhysicsObject(i)
-    };
-};
+// var createItem = function(i) {
+//     return {
+//         body: new PhysicsObject(i)
+//     };
+// };
 
-for(var i=0; i < length; i++) {
-    items.push(createItem(i));
-}
+// for(var i=0; i < length; i++) {
+//     items.push(createItem(i));
+// }
 
-var player = items[length - 1];
+// var player = items[length - 1];
 
 // steering behaviours
-var playerSteering = new Steering(player);
+// var playerSteering = new Steering(player);
 
 var createArrow = function() {
     return {
@@ -113,18 +116,19 @@ var createEnemy = function(texture) {
     }
 }
 
-var createShip = function(texture) {
-    return {
-        body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
-    frictionAir : 0.1,
-    friction : 1,
-    restitution : 0,
-    inertia : Infinity,
-    mass : 1
-  }),
-        sprite: SpriteObject(texture)
-    }
-}
+// var createShip = function(texture) {
+//     return {
+//         body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
+//         frictionAir : 0.1,
+//         friction : 1,
+//         restitution : 0,
+//         inertia : Infinity,
+//         mass : 1
+//       }),
+//         sprite: SpriteObject(texture)
+//     }
+// }
+
 
 // var arrow = createArrow();
 // Body.setMass(arrow.body, 10);
@@ -135,7 +139,9 @@ var createShip = function(texture) {
 //     return Vector.mult(Vector.normalise(Vector.sub(items[id].body.position, player.body.position)), 4);
 // }
 
-let enemy, ship;
+let enemy, ship, bullet, fire, pool;
+let colCategory = 0x001;
+let colCategory2 = 0x002;
 let loader = PIXI.loader;
 loader.add("images/data.json").load(setup);
 
@@ -147,8 +153,20 @@ function setup(){
     // enemy.sprite.scale.set(0.25, 0.25);
     World.addBody(engine.world, enemy.body);
 
-    ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
+    // ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
+    let texture = loader.resources["images/data.json"].textures["wship-4.png"];
+    ship = new Player(colCategory); 
+    ship.init(800, window.innerHeight - 100, 34, 72, texture);
+
+    let tex = PIXI.loader.resources["images/data.json"].textures["player_bullet.png"];
+    bullet = new PlayerBullet(colCategory2);
+    bullet.init(0, 0, 16, 32, tex);
+
+    pool = new BulletPool(engine, stage);
+    pool.init();
+    
     World.addBody(engine.world, ship.body);
+    stage.addChild(ship.sprite);
 
 
     // start animating
@@ -161,22 +179,24 @@ function animate() {
 
     // var angle = Math.atan2(arrow.body.velocity.y, arrow.body.velocity.x);
     // Body.setAngle(arrow.body, angle);
+    Body.setAngularVelocity(enemy.body, 0.02);
 
 
     if (leftKey.isDown) {
         Body.applyForce(ship.body, ship.body.position, {x: -0.003, y: 0});
     }
 
-
-
     if (rightKey.isDown) {
         Body.applyForce(ship.body, ship.body.position, {x: 0.003, y: 0});
     }
-
     // Body.setVelocity(ship.body, {x: 0, y: 0});
 
-    ship.sprite.position = ship.body.position;
+    // ship.sprite.position = ship.body.position;
     enemy.sprite.position = enemy.body.position;
+    enemy.sprite.rotation = enemy.body.angle;
+
+    ship.update();
+    pool.update();
 
     // for(var b in items) {
     //     items[b].sprite.position = items[b].body.position;
@@ -188,21 +208,27 @@ function animate() {
 }
 
 Events.on(engine, 'collisionStart', function(event) {
-    while((id = getRandomInt(0, length-2)) == prevId);
+    // while((id = getRandomInt(0, length-2)) == prevId);
 
-    prevId = id;
+    // prevId = id;
 
-    hit = true;
-    velocity = Vector.clone(Vector.normalise(player.body.velocity));
+    // hit = true;
+    // velocity = Vector.clone(Vector.normalise(player.body.velocity));
 
-    function getRandomInt (min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    // function getRandomInt (min, max) {
+    //     return Math.floor(Math.random() * (max - min + 1)) + min;
+    // }
 
 })
 
 var leftKey = keyboard(37);
 var rightKey = keyboard(39);
+var spaceKey = keyboard(32);
+
+spaceKey.release = function() {
+    console.log('fire: ', ship.body.position);    
+    pool.get(ship.body.position);
+}
 
 function keyboard(keyCode) {
   var key = {};

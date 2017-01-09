@@ -50,7 +50,11 @@
 	
 	var PIXI = _interopRequireWildcard(_pixi);
 	
-	var _steering = __webpack_require__(180);
+	var _player = __webpack_require__(180);
+	
+	var _player2 = _interopRequireDefault(_player);
+	
+	var _steering = __webpack_require__(181);
 	
 	var _steering2 = _interopRequireDefault(_steering);
 	
@@ -91,7 +95,7 @@
 	    hit,
 	    prevId = id;
 	
-	var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, { backgroundColor: 0x1099bb });
+	var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, { backgroundColor: 0x000000 });
 	var stage = new PIXI.Container();
 	document.body.appendChild(renderer.view);
 	
@@ -142,20 +146,20 @@
 	    return box;
 	};
 	
-	var createItem = function createItem(i) {
-	    return {
-	        body: new PhysicsObject(i)
-	    };
-	};
+	// var createItem = function(i) {
+	//     return {
+	//         body: new PhysicsObject(i)
+	//     };
+	// };
 	
-	for (var i = 0; i < length; i++) {
-	    items.push(createItem(i));
-	}
+	// for(var i=0; i < length; i++) {
+	//     items.push(createItem(i));
+	// }
 	
-	var player = items[length - 1];
+	// var player = items[length - 1];
 	
 	// steering behaviours
-	var playerSteering = new _steering2.default(player);
+	// var playerSteering = new Steering(player);
 	
 	var createArrow = function createArrow() {
 	    return {
@@ -170,18 +174,19 @@
 	    };
 	};
 	
-	var createShip = function createShip(texture) {
-	    return {
-	        body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
-	            frictionAir: 0.1,
-	            friction: 1,
-	            restitution: 0,
-	            inertia: Infinity,
-	            mass: 1
-	        }),
-	        sprite: SpriteObject(texture)
-	    };
-	};
+	// var createShip = function(texture) {
+	//     return {
+	//         body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
+	//         frictionAir : 0.1,
+	//         friction : 1,
+	//         restitution : 0,
+	//         inertia : Infinity,
+	//         mass : 1
+	//       }),
+	//         sprite: SpriteObject(texture)
+	//     }
+	// }
+	
 	
 	// var arrow = createArrow();
 	// Body.setMass(arrow.body, 10);
@@ -205,8 +210,12 @@
 	    // enemy.sprite.scale.set(0.25, 0.25);
 	    World.addBody(engine.world, enemy.body);
 	
-	    ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
+	    // ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
+	    var texture = loader.resources["images/data.json"].textures["wship-4.png"];
+	    ship = new _player2.default(800, window.innerHeight - 100, 34, 72, texture);
+	
 	    World.addBody(engine.world, ship.body);
+	    stage.addChild(ship.sprite);
 	
 	    // start animating
 	    animate();
@@ -217,7 +226,7 @@
 	
 	    // var angle = Math.atan2(arrow.body.velocity.y, arrow.body.velocity.x);
 	    // Body.setAngle(arrow.body, angle);
-	
+	    Body.setAngularVelocity(enemy.body, 0.02);
 	
 	    if (leftKey.isDown) {
 	        Body.applyForce(ship.body, ship.body.position, { x: -0.003, y: 0 });
@@ -229,8 +238,11 @@
 	
 	    // Body.setVelocity(ship.body, {x: 0, y: 0});
 	
-	    ship.sprite.position = ship.body.position;
+	    // ship.sprite.position = ship.body.position;
 	    enemy.sprite.position = enemy.body.position;
+	    enemy.sprite.rotation = enemy.body.angle;
+	
+	    ship.update();
 	
 	    // for(var b in items) {
 	    //     items[b].sprite.position = items[b].body.position;
@@ -242,16 +254,17 @@
 	}
 	
 	Events.on(engine, 'collisionStart', function (event) {
-	    while ((id = getRandomInt(0, length - 2)) == prevId) {}
+	    // while((id = getRandomInt(0, length-2)) == prevId);
 	
-	    prevId = id;
+	    // prevId = id;
 	
-	    hit = true;
-	    velocity = Vector.clone(Vector.normalise(player.body.velocity));
+	    // hit = true;
+	    // velocity = Vector.clone(Vector.normalise(player.body.velocity));
 	
-	    function getRandomInt(min, max) {
-	        return Math.floor(Math.random() * (max - min + 1)) + min;
-	    }
+	    // function getRandomInt (min, max) {
+	    //     return Math.floor(Math.random() * (max - min + 1)) + min;
+	    // }
+	
 	});
 	
 	var leftKey = keyboard(37);
@@ -37631,6 +37644,98 @@
 
 /***/ },
 /* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _pixi = __webpack_require__(1);
+	
+	var PIXI = _interopRequireWildcard(_pixi);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	// Matter.js module aliases
+	var Engine = Matter.Engine,
+	    World = Matter.World,
+	    Body = Matter.Body,
+	    Bodies = Matter.Bodies,
+	    Events = Matter.Events,
+	    Vector = Matter.Vector,
+	    Composite = Matter.Composite;
+	
+	var Player = function () {
+	    function Player(x, y, width, height, texture) {
+	        _classCallCheck(this, Player);
+	
+	        this.x = x;
+	        this.y = y;
+	        this.width = width;
+	        this.height = height;
+	        this.texture = texture;
+	
+	        this.createPhysics();
+	        this.createSprite();
+	    }
+	
+	    _createClass(Player, [{
+	        key: 'createPhysics',
+	        value: function createPhysics() {
+	            var options = {
+	                frictionAir: 0.1,
+	                friction: 1,
+	                restitution: 0,
+	                inertia: Infinity,
+	                mass: 1
+	            };
+	
+	            this._body = Bodies.rectangle(this.x, this.y, this.width, this.height, options);
+	        }
+	    }, {
+	        key: 'createSprite',
+	        value: function createSprite() {
+	            this._sprite = new PIXI.Sprite(this.texture);
+	
+	            this._sprite.anchor.x = 0.5;
+	            this._sprite.anchor.y = 0.5;
+	        }
+	    }, {
+	        key: 'update',
+	        value: function update() {
+	            this._sprite.position = this._body.position;
+	        }
+	    }, {
+	        key: 'body',
+	        get: function get() {
+	            return this._body;
+	        },
+	        set: function set(newBody) {
+	            this._body = newBody;
+	        }
+	    }, {
+	        key: 'sprite',
+	        get: function get() {
+	            return this._sprite;
+	        },
+	        set: function set(newSprite) {
+	            this._sprite = newSprite;
+	        }
+	    }]);
+	
+	    return Player;
+	}();
+	
+	exports.default = Player;
+
+/***/ },
+/* 181 */
 /***/ function(module, exports) {
 
 	"use strict";
