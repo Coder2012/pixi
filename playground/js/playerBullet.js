@@ -9,6 +9,7 @@ class PlayerBullet extends PhysicsSprite {
     init(x, y, width, height, texture) {
         super.init(x, y, width, height, texture)
     	this._alive = false;
+        this.sprite.scale.set(0.5, 0.5);
     }
 
     spawn(position) {
