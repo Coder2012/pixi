@@ -143,7 +143,6 @@
 	}
 	
 	function animate() {
-	
 	    var now = Date.now();
 	    if (emitter) emitter.update((now - elapsed) * 0.001);
 	
@@ -38342,6 +38341,7 @@
 	
 			_this._health = 120;
 			_this._stage = undefined;
+			_this._start = 0;
 			return _this;
 		}
 	
@@ -38380,12 +38380,24 @@
 				if (this._particles) {
 					this._particles.update(value);
 				}
+	
+				var w = window.innerWidth / 2;
+				var pos = w * Math.sin(this._start) + w;
+				_matterConsts2.default.Body.setPosition(this.body, { x: pos, y: 120 });
+	
+				this._start += 0.01;
+	
+				_matterConsts2.default.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000));
 			}
 		}, {
 			key: 'destroy',
 			value: function destroy() {
+				var _this2 = this;
+	
 				_get(Enemy.prototype.__proto__ || Object.getPrototypeOf(Enemy.prototype), 'destroy', this).call(this);
-				this.stage.removeChild(this.sprite);
+				var timer = setTimeout(function () {
+					_this2.stage.removeChild(_this2.sprite);
+				}, 1000);
 			}
 		}, {
 			key: 'loader',

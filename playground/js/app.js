@@ -63,7 +63,6 @@ function setup(){
 
 
 function animate() {
-    
     const now = Date.now();
     if (emitter)
         emitter.update((now - elapsed) * 0.001);

@@ -8,6 +8,7 @@ class Enemy extends PhysicsSprite {
 
 		this._health = 120;
 		this._stage = undefined;
+		this._start = 0;
 	}
 
 	init(x, y, width, height, texture, type) {
@@ -26,6 +27,7 @@ class Enemy extends PhysicsSprite {
 
 			let tint = (parseInt(this.sprite.tint) - parseInt(0x001100)).toString(16);
 			this.sprite.tint = '0x' + tint;
+			
 
 			this._particles.emitter.maxLifetime = 1 - (this._health / 100);
 		}else{
@@ -57,11 +59,21 @@ class Enemy extends PhysicsSprite {
 		if(this._particles) {
 			this._particles.update(value);
 		}
+
+		let w = window.innerWidth / 2;
+		let pos = w * Math.sin( this._start ) + w;
+		consts.Body.setPosition(this.body, {x: pos, y: 120});
+		
+		this._start += 0.01;
+
+		consts.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000));
 	}
 
 	destroy() {
 		super.destroy();
-		this.stage.removeChild(this.sprite);
+		const timer = setTimeout(()=>{
+			this.stage.removeChild(this.sprite);
+		}, 1000);
 	}
 
 }
