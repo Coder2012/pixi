@@ -1,23 +1,17 @@
 import * as PIXI from 'pixi.js';
+import consts from './matterConsts.js';
 import Player from './player';
 import PlayerBullet from './playerBullet.js';
 import BulletPool from './bulletPool.js';
+import Enemy from './enemy.js';
 import Steering from './steering';
+const particles = require('pixi-particles');
 
-// Matter.js module aliases
-var Engine = Matter.Engine,
-    World = Matter.World,
-    Body = Matter.Body,
-    Bodies = Matter.Bodies,
-    Events = Matter.Events,
-    Vector = Matter.Vector,
-    Composite = Matter.Composite;
-
-var canvas = document.getElementById('canvas'),
+const canvas = document.getElementById('canvas'),
     innerWidth = window.innerWidth,
     innerHeight = window.innerHeight;
 
-var engine = Engine.create({
+const engine = consts.Engine.create({
         render: {
             element: document.body,
             canvas: canvas,
@@ -28,210 +22,163 @@ var engine = Engine.create({
         }
     });
 
-var velocity = {x: 0, y: -2};
-var desiredVelocity;
-var steering;
-var bodies = [];
-
-var id = 0, 
-    hit,
-    prevId = id;
-
-var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight,{backgroundColor : 0x000000});
-var stage = new PIXI.Container();
-document.body.appendChild(renderer.view);
-
-var items = [];
-var positions = [{x: 100, y: 100}, {x: 100, y: 500}, {x: 500, y: 700}, {x: 700, y: 300}, {x: 900, y: 750}, {x: 900, y: 50}];
-var length = positions.length;
-
-function SpriteObject(texture) {
-    // create a new Sprite using the texture
-    var sprite = new PIXI.Sprite(texture);
-    
-    // center the sprite's anchor point
-    sprite.anchor.x = 0.5;
-    sprite.anchor.y = 0.5;
-    
-    stage.addChild(sprite);
-    return sprite;
-};
-
-var redColor = '#C44D58',
-    greenColor = '#C7F464';
-
-function PhysicsObject(index) {
-    // create two boxes and a ground
-    var x = positions[index].x, 
-        y = positions[index].y, 
-        size = 50;
-
-    var options = {
-        isSensor: true,
-        isStatic: true,
-        render: {
-            strokeStyle: '#ff0000',
-            lineWidth: 5,
-            fillStyle: 'transparent'
+const config = {
+        "alpha": {
+            "start": 0.8,
+            "end": 0.1
+        },
+        "scale": {
+            "start": 1,
+            "end": 0.3
+        },
+        "color": {
+            "start": "fb1010",
+            "end": "f5b830"
+        },
+        "speed": {
+            "start": 200,
+            "end": 100
+        },
+        "startRotation": {
+            "min": 0,
+            "max": 360
+        },
+        "rotationSpeed": {
+            "min": 0,
+            "max": 0
+        },
+        "lifetime": {
+            "min": 0.5,
+            "max": 0.5
+        },
+        "frequency": 0.008,
+        "emitterLifetime": 0.31,
+        "maxParticles": 1000,
+        "pos": {
+            "x": 0,
+            "y": 0
+        },
+        "addAtBack": false,
+        "spawnType": "circle",
+        "spawnCircle": {
+            "x": 0,
+            "y": 0,
+            "r": 10
         }
     }
 
-    if(index == length - 1){
-        options.isSensor = false;
-        options.isStatic = false;
-        options.render.strokeStyle = greenColor;
-    }
+const bodies = [];
 
-    var box = Bodies.rectangle(x, y, size, size, options);
-        
-    bodies.push(box);
-    return box;
-};
+const renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight,{backgroundColor : 0x000000});
+const stage = new PIXI.Container();
+document.body.appendChild(renderer.view);
 
-// var createItem = function(i) {
-//     return {
-//         body: new PhysicsObject(i)
-//     };
-// };
-
-// for(var i=0; i < length; i++) {
-//     items.push(createItem(i));
-// }
-
-// var player = items[length - 1];
-
-// steering behaviours
-// var playerSteering = new Steering(player);
-
-var createArrow = function() {
-    return {
-        body: Bodies.rectangle(100, 700, 50, 1)
-    }
-}
-
-var createEnemy = function(texture) {
-    return {
-        body: Bodies.rectangle(256, 0, 256, 256),
-        sprite: SpriteObject(texture)
-    }
-}
-
-// var createShip = function(texture) {
-//     return {
-//         body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
-//         frictionAir : 0.1,
-//         friction : 1,
-//         restitution : 0,
-//         inertia : Infinity,
-//         mass : 1
-//       }),
-//         sprite: SpriteObject(texture)
-//     }
-// }
-
-
-// var arrow = createArrow();
-// Body.setMass(arrow.body, 10);
-// Body.setVelocity(arrow.body, {x: 10, y: -19});
-// World.addBody(engine.world, arrow.body);
-
-// function setTarget(id) {
-//     return Vector.mult(Vector.normalise(Vector.sub(items[id].body.position, player.body.position)), 4);
-// }
-
-let enemy, ship, bullet, fire, pool;
-let colCategory = 0x001;
-let colCategory2 = 0x002;
-let loader = PIXI.loader;
+let enemy, ship, bullet, fire, pool, texture, emitter;
+const colCategory = 0x001;
+const colCategory2 = 0x002;
+const loader = PIXI.loader;
+loader.add("images/particle.png");
 loader.add("images/data.json").load(setup);
 
+var elapsed = Date.now();
+
 function setup(){
-    let u = new SpriteUtilities(PIXI);  
+    texture = loader.resources["images/data.json"].textures["spacestation.png"];
+    enemy = new Enemy('enemy', engine, colCategory);
+    enemy.init(800, 200, 80, 0, texture, 'circle');
 
-    enemy = createEnemy(loader.resources["images/data.json"].textures["spacestation.png"]);
-    // Body.scale(enemy.body, 0.25, 0.25);
-    // enemy.sprite.scale.set(0.25, 0.25);
-    World.addBody(engine.world, enemy.body);
-
-    // ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
-    let texture = loader.resources["images/data.json"].textures["wship-4.png"];
-    ship = new Player(colCategory); 
+    texture = loader.resources["images/data.json"].textures["wship-4.png"];
+    // texture = loader.resources["images/particle.png"].texture;
+    ship = new Player('player', engine, colCategory2); 
     ship.init(800, window.innerHeight - 100, 34, 72, texture);
 
-    let tex = PIXI.loader.resources["images/data.json"].textures["player_bullet.png"];
-    bullet = new PlayerBullet(colCategory2);
-    bullet.init(0, 0, 16, 32, tex);
-
     pool = new BulletPool(engine, stage);
-    pool.init();
+    pool.init('bullet', colCategory);
     
-    World.addBody(engine.world, ship.body);
+    consts.World.addBody(engine.world, enemy.body);
+    consts.World.addBody(engine.world, ship.body);
+
+    stage.addChild(enemy.sprite);
     stage.addChild(ship.sprite);
 
+    var emitterContainer;
+    emitterContainer = new PIXI.ParticleContainer();
+    emitterContainer.setProperties({
+        scale: true,
+        position: true,
+        rotation: true,
+        uvs: true,
+        alpha: true
+    });
 
-    // start animating
+    stage.addChild(emitterContainer);
+    emitter = new PIXI.particles.Emitter(
+        emitterContainer,
+        [loader.resources["images/particle.png"].texture],
+        config
+    );
+
+    emitter.particleConstructor = PIXI.particles.PathParticle;
+    emitter.updateOwnerPos(window.innerWidth / 2, window.innerHeight / 2);
+
     animate();
 }
 
 
 function animate() {
-    requestAnimationFrame(animate);
+    consts.Body.setAngularVelocity(enemy.body, 0.02);
 
-    // var angle = Math.atan2(arrow.body.velocity.y, arrow.body.velocity.x);
-    // Body.setAngle(arrow.body, angle);
-    Body.setAngularVelocity(enemy.body, 0.02);
+    emitter.emit = true;
 
+    var now = Date.now();
+    if (emitter)
+        emitter.update((now - elapsed) * 0.001);
+    
+    elapsed = now;
 
     if (leftKey.isDown) {
-        Body.applyForce(ship.body, ship.body.position, {x: -0.003, y: 0});
+        consts.Body.applyForce(ship.body, ship.body.position, {x: -0.003, y: 0});
     }
 
     if (rightKey.isDown) {
-        Body.applyForce(ship.body, ship.body.position, {x: 0.003, y: 0});
+        consts.Body.applyForce(ship.body, ship.body.position, {x: 0.003, y: 0});
     }
-    // Body.setVelocity(ship.body, {x: 0, y: 0});
-
-    // ship.sprite.position = ship.body.position;
-    enemy.sprite.position = enemy.body.position;
-    enemy.sprite.rotation = enemy.body.angle;
 
     ship.update();
+    enemy.update();
     pool.update();
 
-    // for(var b in items) {
-    //     items[b].sprite.position = items[b].body.position;
-    //     items[b].sprite.rotation = items[b].body.angle;
-    // }
-
-    // render the container
     renderer.render(stage);
+    requestAnimationFrame(animate);
 }
 
-Events.on(engine, 'collisionStart', function(event) {
-    // while((id = getRandomInt(0, length-2)) == prevId);
+consts.Events.on(engine, 'collisionStart', function(event) {
+    const pairs = event.pairs;
 
-    // prevId = id;
+    pairs.forEach((collision) => {
+        const bodyA = collision.bodyA;
+        const bodyB = collision.bodyB;
 
-    // hit = true;
-    // velocity = Vector.clone(Vector.normalise(player.body.velocity));
+        if(bodyA.label == 'enemy' && collision.bodyB.label.indexOf('bullet') != -1) {
+            pool.remove(bodyB.label);
 
-    // function getRandomInt (min, max) {
-    //     return Math.floor(Math.random() * (max - min + 1)) + min;
-    // }
-
+            if(enemy.body === bodyA ) {
+                enemy.damage();
+            }
+        }
+    }) 
 })
 
-var leftKey = keyboard(37);
-var rightKey = keyboard(39);
-var spaceKey = keyboard(32);
+const leftKey = keyboard(37);
+const rightKey = keyboard(39);
+const spaceKey = keyboard(32);
 
 spaceKey.release = function() {
-    console.log('fire: ', ship.body.position);    
     pool.get(ship.body.position);
 }
 
 function keyboard(keyCode) {
-  var key = {};
+  const key = {};
   key.code = keyCode;
   key.isDown = false;
   key.isUp = true;
@@ -272,7 +219,7 @@ function keyboard(keyCode) {
 engine.world.gravity.y = 0;
 
 // add all of the bodies to the world
-World.add(engine.world, bodies);
+consts.World.add(engine.world, bodies);
 
 // run the engine
-Engine.run(engine);
+consts.Engine.run(engine);

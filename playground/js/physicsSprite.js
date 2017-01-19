@@ -1,25 +1,20 @@
 import * as PIXI from 'pixi.js';
-
-// Matter.js module aliases
-var Engine = Matter.Engine,
-    World = Matter.World,
-    Body = Matter.Body,
-    Bodies = Matter.Bodies,
-    Events = Matter.Events,
-    Vector = Matter.Vector,
-    Composite = Matter.Composite;
+import consts from './matterConsts.js';
 
  class PhysicsSprite {
- 	constructor(category) {
+ 	constructor(id, engine, category) {
+        this._id = id;
+        this._engine = engine;
  		this.category = category; 
  	}
 
- 	init(x, y, width, height, texture) {
+ 	init(x, y, width, height, texture, type) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.texture = texture;
+        this.type = type;
 
         this.createPhysics();
         this.createSprite();
@@ -27,22 +22,27 @@ var Engine = Matter.Engine,
 
     createPhysics() {
         let options = {
-            frictionAir : 0.1,
+            frictionAir : 0.1, 
             friction : 1,
-            restitution : 0,
             inertia : Infinity,
+            isSensor: true,
+            label: this._id,
             mass : 1,
+            restitution : 0,
             collisionFilter: {
-            	category: this.category
+            	mask: this.category
             }
         }
 
-        this._body = Bodies.rectangle(this.x, this.y, this.width, this.height, options);
+        if(this.type == 'circle') {
+            this._body = consts.Bodies.circle(this.x, this.y, this.width, options);
+        } else  {
+            this._body = consts.Bodies.rectangle(this.x, this.y, this.width, this.height, options);
+        }
     }
 
     createSprite() {
         this._sprite = new PIXI.Sprite(this.texture);
-    
         this._sprite.anchor.x = 0.5;
         this._sprite.anchor.y = 0.5;
     }
@@ -62,9 +62,24 @@ var Engine = Matter.Engine,
     set sprite(newSprite) {
         this._sprite = newSprite;
     }
+
+    get id() {
+        return this._id;
+    }
+
+    set id(id) {
+        this._id = id;
+    }
  
     update() {
-        this._sprite.position = this._body.position;
+        if(this._body) {
+            this._sprite.position = this._body.position;
+            this._sprite.rotation = this._body.angle;
+        }
+    }
+
+    destroy() {
+        consts.World.remove(this._engine.world, this._body);
     }
  }
 
