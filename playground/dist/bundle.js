@@ -50,19 +50,27 @@
 	
 	var PIXI = _interopRequireWildcard(_pixi);
 	
-	var _player = __webpack_require__(179);
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
+	
+	var _player = __webpack_require__(180);
 	
 	var _player2 = _interopRequireDefault(_player);
 	
-	var _playerBullet = __webpack_require__(181);
+	var _playerBullet = __webpack_require__(182);
 	
 	var _playerBullet2 = _interopRequireDefault(_playerBullet);
 	
-	var _bulletPool = __webpack_require__(182);
+	var _bulletPool = __webpack_require__(183);
 	
 	var _bulletPool2 = _interopRequireDefault(_bulletPool);
 	
-	var _steering = __webpack_require__(183);
+	var _enemy = __webpack_require__(184);
+	
+	var _enemy2 = _interopRequireDefault(_enemy);
+	
+	var _steering = __webpack_require__(185);
 	
 	var _steering2 = _interopRequireDefault(_steering);
 	
@@ -70,20 +78,13 @@
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
-	// Matter.js module aliases
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
+	var particles = __webpack_require__(186);
 	
 	var canvas = document.getElementById('canvas'),
 	    innerWidth = window.innerWidth,
 	    innerHeight = window.innerHeight;
 	
-	var engine = Engine.create({
+	var engine = _matterConsts2.default.Engine.create({
 	    render: {
 	        element: document.body,
 	        canvas: canvas,
@@ -94,198 +95,151 @@
 	    }
 	});
 	
-	var velocity = { x: 0, y: -2 };
-	var desiredVelocity;
-	var steering;
-	var bodies = [];
+	var config = {
+	    "alpha": {
+	        "start": 0.8,
+	        "end": 0.1
+	    },
+	    "scale": {
+	        "start": 1,
+	        "end": 0.3
+	    },
+	    "color": {
+	        "start": "fb1010",
+	        "end": "f5b830"
+	    },
+	    "speed": {
+	        "start": 200,
+	        "end": 100
+	    },
+	    "startRotation": {
+	        "min": 0,
+	        "max": 360
+	    },
+	    "rotationSpeed": {
+	        "min": 0,
+	        "max": 0
+	    },
+	    "lifetime": {
+	        "min": 0.5,
+	        "max": 0.5
+	    },
+	    "frequency": 0.008,
+	    "emitterLifetime": 0.31,
+	    "maxParticles": 1000,
+	    "pos": {
+	        "x": 0,
+	        "y": 0
+	    },
+	    "addAtBack": false,
+	    "spawnType": "circle",
+	    "spawnCircle": {
+	        "x": 0,
+	        "y": 0,
+	        "r": 10
+	    }
+	};
 	
-	var id = 0,
-	    hit,
-	    prevId = id;
+	var bodies = [];
 	
 	var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, { backgroundColor: 0x000000 });
 	var stage = new PIXI.Container();
 	document.body.appendChild(renderer.view);
 	
-	var items = [];
-	var positions = [{ x: 100, y: 100 }, { x: 100, y: 500 }, { x: 500, y: 700 }, { x: 700, y: 300 }, { x: 900, y: 750 }, { x: 900, y: 50 }];
-	var length = positions.length;
-	
-	function SpriteObject(texture) {
-	    // create a new Sprite using the texture
-	    var sprite = new PIXI.Sprite(texture);
-	
-	    // center the sprite's anchor point
-	    sprite.anchor.x = 0.5;
-	    sprite.anchor.y = 0.5;
-	
-	    stage.addChild(sprite);
-	    return sprite;
-	};
-	
-	var redColor = '#C44D58',
-	    greenColor = '#C7F464';
-	
-	function PhysicsObject(index) {
-	    // create two boxes and a ground
-	    var x = positions[index].x,
-	        y = positions[index].y,
-	        size = 50;
-	
-	    var options = {
-	        isSensor: true,
-	        isStatic: true,
-	        render: {
-	            strokeStyle: '#ff0000',
-	            lineWidth: 5,
-	            fillStyle: 'transparent'
-	        }
-	    };
-	
-	    if (index == length - 1) {
-	        options.isSensor = false;
-	        options.isStatic = false;
-	        options.render.strokeStyle = greenColor;
-	    }
-	
-	    var box = Bodies.rectangle(x, y, size, size, options);
-	
-	    bodies.push(box);
-	    return box;
-	};
-	
-	// var createItem = function(i) {
-	//     return {
-	//         body: new PhysicsObject(i)
-	//     };
-	// };
-	
-	// for(var i=0; i < length; i++) {
-	//     items.push(createItem(i));
-	// }
-	
-	// var player = items[length - 1];
-	
-	// steering behaviours
-	// var playerSteering = new Steering(player);
-	
-	var createArrow = function createArrow() {
-	    return {
-	        body: Bodies.rectangle(100, 700, 50, 1)
-	    };
-	};
-	
-	var createEnemy = function createEnemy(texture) {
-	    return {
-	        body: Bodies.rectangle(256, 0, 256, 256),
-	        sprite: SpriteObject(texture)
-	    };
-	};
-	
-	// var createShip = function(texture) {
-	//     return {
-	//         body: Bodies.rectangle(800, window.innerHeight - 50, 34, 72, {
-	//         frictionAir : 0.1,
-	//         friction : 1,
-	//         restitution : 0,
-	//         inertia : Infinity,
-	//         mass : 1
-	//       }),
-	//         sprite: SpriteObject(texture)
-	//     }
-	// }
-	
-	
-	// var arrow = createArrow();
-	// Body.setMass(arrow.body, 10);
-	// Body.setVelocity(arrow.body, {x: 10, y: -19});
-	// World.addBody(engine.world, arrow.body);
-	
-	// function setTarget(id) {
-	//     return Vector.mult(Vector.normalise(Vector.sub(items[id].body.position, player.body.position)), 4);
-	// }
-	
 	var enemy = void 0,
 	    ship = void 0,
 	    bullet = void 0,
 	    fire = void 0,
-	    pool = void 0;
+	    pool = void 0,
+	    texture = void 0,
+	    emitter = void 0;
 	var colCategory = 0x001;
 	var colCategory2 = 0x002;
 	var loader = PIXI.loader;
+	loader.add("images/particle.png");
 	loader.add("images/data.json").load(setup);
 	
+	var elapsed = Date.now();
+	
 	function setup() {
-	    var u = new SpriteUtilities(PIXI);
+	    texture = loader.resources["images/data.json"].textures["spacestation.png"];
+	    enemy = new _enemy2.default('enemy', engine, colCategory);
+	    enemy.init(800, 200, 80, 0, texture, 'circle');
 	
-	    enemy = createEnemy(loader.resources["images/data.json"].textures["spacestation.png"]);
-	    // Body.scale(enemy.body, 0.25, 0.25);
-	    // enemy.sprite.scale.set(0.25, 0.25);
-	    World.addBody(engine.world, enemy.body);
-	
-	    // ship = createShip(loader.resources["images/data.json"].textures["wship-4.png"]);
-	    var texture = loader.resources["images/data.json"].textures["wship-4.png"];
-	    ship = new _player2.default(colCategory);
+	    texture = loader.resources["images/data.json"].textures["wship-4.png"];
+	    // texture = loader.resources["images/particle.png"].texture;
+	    ship = new _player2.default('player', engine, colCategory2);
 	    ship.init(800, window.innerHeight - 100, 34, 72, texture);
 	
-	    var tex = PIXI.loader.resources["images/data.json"].textures["player_bullet.png"];
-	    bullet = new _playerBullet2.default(colCategory2);
-	    bullet.init(0, 0, 16, 32, tex);
-	
 	    pool = new _bulletPool2.default(engine, stage);
-	    pool.init();
+	    pool.init('bullet', colCategory);
 	
-	    World.addBody(engine.world, ship.body);
+	    _matterConsts2.default.World.addBody(engine.world, enemy.body);
+	    _matterConsts2.default.World.addBody(engine.world, ship.body);
+	
+	    stage.addChild(enemy.sprite);
 	    stage.addChild(ship.sprite);
 	
-	    // start animating
+	    var emitterContainer;
+	    emitterContainer = new PIXI.ParticleContainer();
+	    emitterContainer.setProperties({
+	        scale: true,
+	        position: true,
+	        rotation: true,
+	        uvs: true,
+	        alpha: true
+	    });
+	
+	    stage.addChild(emitterContainer);
+	    emitter = new PIXI.particles.Emitter(emitterContainer, [loader.resources["images/particle.png"].texture], config);
+	
+	    emitter.particleConstructor = PIXI.particles.PathParticle;
+	    emitter.updateOwnerPos(window.innerWidth / 2, window.innerHeight / 2);
+	
 	    animate();
 	}
 	
 	function animate() {
-	    requestAnimationFrame(animate);
+	    _matterConsts2.default.Body.setAngularVelocity(enemy.body, 0.02);
 	
-	    // var angle = Math.atan2(arrow.body.velocity.y, arrow.body.velocity.x);
-	    // Body.setAngle(arrow.body, angle);
-	    Body.setAngularVelocity(enemy.body, 0.02);
+	    emitter.emit = true;
+	
+	    var now = Date.now();
+	    if (emitter) emitter.update((now - elapsed) * 0.001);
+	
+	    elapsed = now;
 	
 	    if (leftKey.isDown) {
-	        Body.applyForce(ship.body, ship.body.position, { x: -0.003, y: 0 });
+	        _matterConsts2.default.Body.applyForce(ship.body, ship.body.position, { x: -0.003, y: 0 });
 	    }
 	
 	    if (rightKey.isDown) {
-	        Body.applyForce(ship.body, ship.body.position, { x: 0.003, y: 0 });
+	        _matterConsts2.default.Body.applyForce(ship.body, ship.body.position, { x: 0.003, y: 0 });
 	    }
-	    // Body.setVelocity(ship.body, {x: 0, y: 0});
-	
-	    // ship.sprite.position = ship.body.position;
-	    enemy.sprite.position = enemy.body.position;
-	    enemy.sprite.rotation = enemy.body.angle;
 	
 	    ship.update();
+	    enemy.update();
 	    pool.update();
 	
-	    // for(var b in items) {
-	    //     items[b].sprite.position = items[b].body.position;
-	    //     items[b].sprite.rotation = items[b].body.angle;
-	    // }
-	
-	    // render the container
 	    renderer.render(stage);
+	    requestAnimationFrame(animate);
 	}
 	
-	Events.on(engine, 'collisionStart', function (event) {
-	    // while((id = getRandomInt(0, length-2)) == prevId);
+	_matterConsts2.default.Events.on(engine, 'collisionStart', function (event) {
+	    var pairs = event.pairs;
 	
-	    // prevId = id;
+	    pairs.forEach(function (collision) {
+	        var bodyA = collision.bodyA;
+	        var bodyB = collision.bodyB;
 	
-	    // hit = true;
-	    // velocity = Vector.clone(Vector.normalise(player.body.velocity));
+	        if (bodyA.label == 'enemy' && collision.bodyB.label.indexOf('bullet') != -1) {
+	            pool.remove(bodyB.label);
 	
-	    // function getRandomInt (min, max) {
-	    //     return Math.floor(Math.random() * (max - min + 1)) + min;
-	    // }
-	
+	            if (enemy.body === bodyA) {
+	                enemy.damage();
+	            }
+	        }
+	    });
 	});
 	
 	var leftKey = keyboard(37);
@@ -293,7 +247,6 @@
 	var spaceKey = keyboard(32);
 	
 	spaceKey.release = function () {
-	    console.log('fire: ', ship.body.position);
 	    pool.get(ship.body.position);
 	};
 	
@@ -335,10 +288,10 @@
 	engine.world.gravity.y = 0;
 	
 	// add all of the bodies to the world
-	World.add(engine.world, bodies);
+	_matterConsts2.default.World.add(engine.world, bodies);
 	
 	// run the engine
-	Engine.run(engine);
+	_matterConsts2.default.Engine.run(engine);
 
 /***/ },
 /* 1 */
@@ -38044,6 +37997,28 @@
 
 /***/ },
 /* 179 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	   value: true
+	});
+	// Matter.js module aliases
+	var consts = {
+	   Engine: Matter.Engine,
+	   World: Matter.World,
+	   Body: Matter.Body,
+	   Bodies: Matter.Bodies,
+	   Events: Matter.Events,
+	   Vector: Matter.Vector,
+	   Composite: Matter.Composite
+	};
+	
+	exports.default = consts;
+
+/***/ },
+/* 180 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -38056,7 +38031,7 @@
 	
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
-	var _physicsSprite = __webpack_require__(180);
+	var _physicsSprite = __webpack_require__(181);
 	
 	var _physicsSprite2 = _interopRequireDefault(_physicsSprite);
 	
@@ -38068,22 +38043,13 @@
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-	// Matter.js module aliases
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
-	
 	var Player = function (_PhysicsSprite) {
 	    _inherits(Player, _PhysicsSprite);
 	
-	    function Player(category) {
+	    function Player(id, engine, category) {
 	        _classCallCheck(this, Player);
 	
-	        return _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, category));
+	        return _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, id, engine, category));
 	    }
 	
 	    _createClass(Player, [{
@@ -38102,7 +38068,7 @@
 	exports.default = Player;
 
 /***/ },
-/* 180 */
+/* 181 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -38117,34 +38083,34 @@
 	
 	var PIXI = _interopRequireWildcard(_pixi);
 	
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	// Matter.js module aliases
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
-	
 	var PhysicsSprite = function () {
-	    function PhysicsSprite(category) {
+	    function PhysicsSprite(id, engine, category) {
 	        _classCallCheck(this, PhysicsSprite);
 	
+	        this._id = id;
+	        this._engine = engine;
 	        this.category = category;
 	    }
 	
 	    _createClass(PhysicsSprite, [{
 	        key: 'init',
-	        value: function init(x, y, width, height, texture) {
+	        value: function init(x, y, width, height, texture, type) {
 	            this.x = x;
 	            this.y = y;
 	            this.width = width;
 	            this.height = height;
 	            this.texture = texture;
+	            this.type = type;
 	
 	            this.createPhysics();
 	            this.createSprite();
@@ -38155,28 +38121,41 @@
 	            var options = {
 	                frictionAir: 0.1,
 	                friction: 1,
-	                restitution: 0,
 	                inertia: Infinity,
+	                isSensor: true,
+	                label: this._id,
 	                mass: 1,
+	                restitution: 0,
 	                collisionFilter: {
-	                    category: this.category
+	                    mask: this.category
 	                }
 	            };
 	
-	            this._body = Bodies.rectangle(this.x, this.y, this.width, this.height, options);
+	            if (this.type == 'circle') {
+	                this._body = _matterConsts2.default.Bodies.circle(this.x, this.y, this.width, options);
+	            } else {
+	                this._body = _matterConsts2.default.Bodies.rectangle(this.x, this.y, this.width, this.height, options);
+	            }
 	        }
 	    }, {
 	        key: 'createSprite',
 	        value: function createSprite() {
 	            this._sprite = new PIXI.Sprite(this.texture);
-	
 	            this._sprite.anchor.x = 0.5;
 	            this._sprite.anchor.y = 0.5;
 	        }
 	    }, {
 	        key: 'update',
 	        value: function update() {
-	            this._sprite.position = this._body.position;
+	            if (this._body) {
+	                this._sprite.position = this._body.position;
+	                this._sprite.rotation = this._body.angle;
+	            }
+	        }
+	    }, {
+	        key: 'destroy',
+	        value: function destroy() {
+	            _matterConsts2.default.World.remove(this._engine.world, this._body);
 	        }
 	    }, {
 	        key: 'body',
@@ -38194,6 +38173,14 @@
 	        set: function set(newSprite) {
 	            this._sprite = newSprite;
 	        }
+	    }, {
+	        key: 'id',
+	        get: function get() {
+	            return this._id;
+	        },
+	        set: function set(id) {
+	            this._id = id;
+	        }
 	    }]);
 	
 	    return PhysicsSprite;
@@ -38202,7 +38189,7 @@
 	exports.default = PhysicsSprite;
 
 /***/ },
-/* 181 */
+/* 182 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -38215,9 +38202,13 @@
 	
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
-	var _physicsSprite = __webpack_require__(180);
+	var _physicsSprite = __webpack_require__(181);
 	
 	var _physicsSprite2 = _interopRequireDefault(_physicsSprite);
+	
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -38227,42 +38218,49 @@
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-	// Matter.js module aliases
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
-	
 	var PlayerBullet = function (_PhysicsSprite) {
 	    _inherits(PlayerBullet, _PhysicsSprite);
 	
-	    function PlayerBullet(category) {
+	    function PlayerBullet(id, engine, category) {
 	        _classCallCheck(this, PlayerBullet);
 	
-	        return _possibleConstructorReturn(this, (PlayerBullet.__proto__ || Object.getPrototypeOf(PlayerBullet)).call(this, category));
+	        return _possibleConstructorReturn(this, (PlayerBullet.__proto__ || Object.getPrototypeOf(PlayerBullet)).call(this, id, engine, category));
 	    }
 	
 	    _createClass(PlayerBullet, [{
 	        key: 'init',
 	        value: function init(x, y, width, height, texture) {
 	            _get(PlayerBullet.prototype.__proto__ || Object.getPrototypeOf(PlayerBullet.prototype), 'init', this).call(this, x, y, width, height, texture);
-	            this.alive = false;
+	            this._alive = false;
 	        }
 	    }, {
 	        key: 'spawn',
 	        value: function spawn(position) {
-	            this.alive = true;
-	            Body.setPosition(this.body, position);
-	            console.log('spawn');
+	            this._alive = true;
+	            _matterConsts2.default.Body.setPosition(this.body, position);
 	        }
 	    }, {
 	        key: 'update',
 	        value: function update() {
+	            if (this.body.position.y < -50) {
+	                this.alive = false;
+	            }
+	
+	            if (this.alive == true) {
+	                _matterConsts2.default.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.008 });
+	            } else {
+	                _matterConsts2.default.Body.setPosition(this.body, { x: 50, y: 50 });
+	            }
+	
 	            _get(PlayerBullet.prototype.__proto__ || Object.getPrototypeOf(PlayerBullet.prototype), 'update', this).call(this);
-	            Body.applyForce(this.body, this.body.position, { x: 0, y: -0.008 });
+	        }
+	    }, {
+	        key: 'alive',
+	        get: function get() {
+	            return this._alive;
+	        },
+	        set: function set(value) {
+	            this._alive = value;
 	        }
 	    }]);
 	
@@ -38272,7 +38270,7 @@
 	exports.default = PlayerBullet;
 
 /***/ },
-/* 182 */
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -38287,7 +38285,11 @@
 	
 	var PIXI = _interopRequireWildcard(_pixi);
 	
-	var _playerBullet = __webpack_require__(181);
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
+	
+	var _playerBullet = __webpack_require__(182);
 	
 	var _playerBullet2 = _interopRequireDefault(_playerBullet);
 	
@@ -38296,15 +38298,6 @@
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	// Matter.js module aliases
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
 	
 	var BulletPool = function () {
 		function BulletPool(engine, container) {
@@ -38320,13 +38313,13 @@
 	
 		_createClass(BulletPool, [{
 			key: 'init',
-			value: function init() {
+			value: function init(id, category) {
 				for (var i = 0; i < this.size; i++) {
-					var bullet = new _playerBullet2.default();
+					var bullet = new _playerBullet2.default('bullet_' + i, this.engine, category);
 					bullet.init(0, 0, 16, 32, this.texture);
 					this.pool[i] = bullet;
 	
-					World.addBody(this.engine.world, bullet.body);
+					_matterConsts2.default.World.addBody(this.engine.world, bullet.body);
 					this.container.addChild(bullet.sprite);
 				}
 			}
@@ -38339,10 +38332,21 @@
 				}
 			}
 		}, {
+			key: 'remove',
+			value: function remove(id) {
+				console.log(id);
+				this.pool.forEach(function (bullet) {
+					if (bullet.alive && bullet.id === id) {
+						bullet.alive = false;
+						bullet.update();
+					}
+				});
+			}
+		}, {
 			key: 'update',
 			value: function update() {
-				this.pool.forEach(function (bullet) {
-					if (bullet.alive) {
+				this.pool.forEach(function (bullet, i) {
+					if (bullet.alive == true) {
 						bullet.update();
 					}
 				});
@@ -38355,10 +38359,10 @@
 	exports.default = BulletPool;
 
 /***/ },
-/* 183 */
-/***/ function(module, exports) {
+/* 184 */
+/***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
@@ -38366,15 +38370,91 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _physicsSprite = __webpack_require__(181);
+	
+	var _physicsSprite2 = _interopRequireDefault(_physicsSprite);
+	
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var Engine = Matter.Engine,
-	    World = Matter.World,
-	    Body = Matter.Body,
-	    Bodies = Matter.Bodies,
-	    Events = Matter.Events,
-	    Vector = Matter.Vector,
-	    Composite = Matter.Composite;
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Enemy = function (_PhysicsSprite) {
+		_inherits(Enemy, _PhysicsSprite);
+	
+		function Enemy(id, engine, category) {
+			_classCallCheck(this, Enemy);
+	
+			var _this = _possibleConstructorReturn(this, (Enemy.__proto__ || Object.getPrototypeOf(Enemy)).call(this, id, engine, category));
+	
+			_this._health = 120;
+			return _this;
+		}
+	
+		_createClass(Enemy, [{
+			key: 'init',
+			value: function init(x, y, width, height, texture, type) {
+				_get(Enemy.prototype.__proto__ || Object.getPrototypeOf(Enemy.prototype), 'init', this).call(this, x, y, width, height, texture, type);
+			}
+		}, {
+			key: 'damage',
+			value: function damage() {
+				if (this._health > 0) {
+					this._health -= 10;
+					var tint = (parseInt(this.sprite.tint) - parseInt(0x001111)).toString(16);
+					this.sprite.tint = '0x' + tint;
+					console.log(this.sprite.tint);
+				} else {
+					console.log('enemy destroyed');
+					this.sprite.tint = 0xff0000;
+					this.destroy();
+				}
+			}
+		}, {
+			key: 'update',
+			value: function update() {
+				_get(Enemy.prototype.__proto__ || Object.getPrototypeOf(Enemy.prototype), 'update', this).call(this);
+			}
+		}, {
+			key: 'destroy',
+			value: function destroy() {
+				_get(Enemy.prototype.__proto__ || Object.getPrototypeOf(Enemy.prototype), 'destroy', this).call(this);
+			}
+		}]);
+	
+		return Enemy;
+	}(_physicsSprite2.default);
+	
+	exports.default = Enemy;
+
+/***/ },
+/* 185 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _matterConsts = __webpack_require__(179);
+	
+	var _matterConsts2 = _interopRequireDefault(_matterConsts);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var Steering = function () {
 		function Steering(entity) {
@@ -38384,14 +38464,14 @@
 		}
 	
 		_createClass(Steering, [{
-			key: "seek",
+			key: 'seek',
 			value: function seek(desiredVelocity, velocity) {
-				var steering = Vector.mult(Vector.sub(desiredVelocity, velocity), 2);
+				var steering = _matterConsts2.default.Vector.mult(Vector.sub(desiredVelocity, velocity), 2);
 	
-				Body.setVelocity(this.entity.body, steering);
+				_matterConsts2.default.Body.setVelocity(this.entity.body, steering);
 	
 				var angle = Math.atan2(this.entity.body.velocity.y, this.entity.body.velocity.x);
-				Body.setAngle(this.entity.body, angle);
+				_matterConsts2.default.Body.setAngle(this.entity.body, angle);
 			}
 		}]);
 	
@@ -38399,6 +38479,21 @@
 	}();
 	
 	exports.default = Steering;
+
+/***/ },
+/* 186 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var require;var require;/*!
+	 * pixi-particles - v2.1.0
+	 * Compiled Sun, 15 Jan 2017 02:03:30 UTC
+	 *
+	 * pixi-particles is licensed under the MIT License.
+	 * http://www.opensource.org/licenses/mit-license
+	 */
+	!function(t){if(true)module.exports=t();else if("function"==typeof define&&define.amd)define([],t);else{var i;i="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this,i.pixiParticles=t()}}(function(){var define,module,exports;return function t(i,e,s){function a(n,o){if(!e[n]){if(!i[n]){var h="function"==typeof require&&require;if(!o&&h)return require(n,!0);if(r)return r(n,!0);var l=new Error("Cannot find module '"+n+"'");throw l.code="MODULE_NOT_FOUND",l}var p=e[n]={exports:{}};i[n][0].call(p.exports,function(t){var e=i[n][1][t];return a(e?e:t)},p,p.exports,t,i,e,s)}return e[n].exports}for(var r="function"==typeof require&&require,n=0;n<s.length;n++)a(s[n]);return a}({1:[function(t,i,e){"use strict";var s=t("./ParticleUtils"),a=t("./Particle"),r=PIXI.Texture,n=function(t){a.call(this,t),this.textures=null,this.duration=0,this.framerate=0,this.elapsed=0,this.loop=!1},o=a.prototype,h=n.prototype=Object.create(o);h.init=function(){this.Particle_init(),this.elapsed=0,this.framerate<0&&(this.duration=this.maxLife,this.framerate=this.textures.length/this.duration)},h.applyArt=function(t){this.textures=t.textures,this.framerate=t.framerate,this.duration=t.duration,this.loop=t.loop},h.update=function(t){if(this.Particle_update(t)>=0){this.elapsed+=t,this.elapsed>this.duration&&(this.loop?this.elapsed=this.elapsed%this.duration:this.elapsed=this.duration-1e-6);var i=this.elapsed*this.framerate+1e-7|0;this.texture=this.textures[i]||s.EMPTY_TEXTURE}},h.Particle_destroy=a.prototype.destroy,h.destroy=function(){this.Particle_destroy(),this.textures=null},n.parseArt=function(t){var i,e,s,a,n,o,h=[];for(i=0;i<t.length;++i){for(e=t[i],t[i]=h={},h.textures=o=[],a=e.textures,s=0;s<a.length;++s)if(n=a[s],"string"==typeof n)o.push(r.fromImage(n));else if(n instanceof r)o.push(n);else{var l=n.count||1;for(n="string"==typeof n.texture?r.fromImage(n.texture):n.texture;l>0;--l)o.push(n)}"matchLife"==e.framerate?(h.framerate=-1,h.duration=0,h.loop=!1):(h.loop=!!e.loop,h.framerate=e.framerate>0?e.framerate:60,h.duration=o.length/h.framerate)}return t},i.exports=n},{"./Particle":3,"./ParticleUtils":4}],2:[function(t,i,e){"use strict";var s=t("./ParticleUtils"),a=t("./Particle"),r=PIXI.particles.ParticleContainer||PIXI.ParticleContainer,n=PIXI.ticker.shared,o=function(t,i,e){this._particleConstructor=a,this.particleImages=null,this.startAlpha=1,this.endAlpha=1,this.startSpeed=0,this.endSpeed=0,this.minimumSpeedMultiplier=1,this.acceleration=null,this.maxSpeed=NaN,this.startScale=1,this.endScale=1,this.minimumScaleMultiplier=1,this.startColor=null,this.endColor=null,this.minLifetime=0,this.maxLifetime=0,this.minStartRotation=0,this.maxStartRotation=0,this.noRotation=!1,this.minRotationSpeed=0,this.maxRotationSpeed=0,this.particleBlendMode=0,this.customEase=null,this.extraData=null,this._frequency=1,this.maxParticles=1e3,this.emitterLifetime=-1,this.spawnPos=null,this.spawnType=null,this._spawnFunc=null,this.spawnRect=null,this.spawnCircle=null,this.particlesPerWave=1,this.particleSpacing=0,this.angleStart=0,this.rotation=0,this.ownerPos=null,this._prevEmitterPos=null,this._prevPosIsValid=!1,this._posChanged=!1,this._parentIsPC=!1,this._parent=null,this.addAtBack=!1,this.particleCount=0,this._emit=!1,this._spawnTimer=0,this._emitterLife=-1,this._activeParticlesFirst=null,this._activeParticlesLast=null,this._poolFirst=null,this._origConfig=null,this._origArt=null,this._autoUpdate=!1,this.parent=t,i&&e&&this.init(i,e),this.recycle=this.recycle,this.update=this.update,this.rotate=this.rotate,this.updateSpawnPos=this.updateSpawnPos,this.updateOwnerPos=this.updateOwnerPos},h=o.prototype={},l=new PIXI.Point;Object.defineProperty(h,"frequency",{get:function(){return this._frequency},set:function(t){"number"==typeof t&&t>0?this._frequency=t:this._frequency=1}}),Object.defineProperty(h,"particleConstructor",{get:function(){return this._particleConstructor},set:function(t){if(t!=this._particleConstructor){this._particleConstructor=t,this.cleanup();for(var i=this._poolFirst;i;i=i.next)i.destroy();this._poolFirst=null,this._origConfig&&this._origArt&&this.init(this._origArt,this._origConfig)}}}),Object.defineProperty(h,"parent",{get:function(){return this._parent},set:function(t){if(this._parentIsPC)for(var i=this._poolFirst;i;i=i.next)i.parent&&i.parent.removeChild(i);this.cleanup(),this._parent=t,this._parentIsPC=r&&t&&t instanceof r}}),h.init=function(t,i){if(t&&i){this.cleanup(),this._origConfig=i,this._origArt=t,t=Array.isArray(t)?t.slice():[t];var e=this._particleConstructor;this.particleImages=e.parseArt?e.parseArt(t):t,i.alpha?(this.startAlpha=i.alpha.start,this.endAlpha=i.alpha.end):this.startAlpha=this.endAlpha=1,i.speed?(this.startSpeed=i.speed.start,this.endSpeed=i.speed.end,this.minimumSpeedMultiplier=i.speed.minimumSpeedMultiplier||1):(this.minimumSpeedMultiplier=1,this.startSpeed=this.endSpeed=0);var a=i.acceleration;a&&(a.x||a.y)?(this.endSpeed=this.startSpeed,this.acceleration=new PIXI.Point(a.x,a.y),this.maxSpeed=i.maxSpeed||NaN):this.acceleration=new PIXI.Point,i.scale?(this.startScale=i.scale.start,this.endScale=i.scale.end,this.minimumScaleMultiplier=i.scale.minimumScaleMultiplier||1):this.startScale=this.endScale=this.minimumScaleMultiplier=1,i.color&&(this.startColor=s.hexToRGB(i.color.start),i.color.start!=i.color.end?this.endColor=s.hexToRGB(i.color.end):this.endColor=null),i.startRotation?(this.minStartRotation=i.startRotation.min,this.maxStartRotation=i.startRotation.max):this.minStartRotation=this.maxStartRotation=0,i.noRotation&&(this.minStartRotation||this.maxStartRotation)?this.noRotation=!!i.noRotation:this.noRotation=!1,i.rotationSpeed?(this.minRotationSpeed=i.rotationSpeed.min,this.maxRotationSpeed=i.rotationSpeed.max):this.minRotationSpeed=this.maxRotationSpeed=0,this.minLifetime=i.lifetime.min,this.maxLifetime=i.lifetime.max,this.particleBlendMode=s.getBlendMode(i.blendMode),i.ease?this.customEase="function"==typeof i.ease?i.ease:s.generateEase(i.ease):this.customEase=null,e.parseData?this.extraData=e.parseData(i.extraData):this.extraData=i.extraData||null,this.spawnRect=this.spawnCircle=null,this.particlesPerWave=1,this.particleSpacing=0,this.angleStart=0;var r;switch(i.spawnType){case"rect":this.spawnType="rect",this._spawnFunc=this._spawnRect;var n=i.spawnRect;this.spawnRect=new PIXI.Rectangle(n.x,n.y,n.w,n.h);break;case"circle":this.spawnType="circle",this._spawnFunc=this._spawnCircle,r=i.spawnCircle,this.spawnCircle=new PIXI.Circle(r.x,r.y,r.r);break;case"ring":this.spawnType="ring",this._spawnFunc=this._spawnRing,r=i.spawnCircle,this.spawnCircle=new PIXI.Circle(r.x,r.y,r.r),this.spawnCircle.minRadius=r.minR;break;case"burst":this.spawnType="burst",this._spawnFunc=this._spawnBurst,this.particlesPerWave=i.particlesPerWave,this.particleSpacing=i.particleSpacing,this.angleStart=i.angleStart?i.angleStart:0;break;case"point":this.spawnType="point",this._spawnFunc=this._spawnPoint;break;default:this.spawnType="point",this._spawnFunc=this._spawnPoint}this.frequency=i.frequency,this.emitterLifetime=i.emitterLifetime||-1,this.maxParticles=i.maxParticles>0?i.maxParticles:1e3,this.addAtBack=!!i.addAtBack,this.rotation=0,this.ownerPos=new PIXI.Point,this.spawnPos=new PIXI.Point(i.pos.x,i.pos.y),this._prevEmitterPos=this.spawnPos.clone(),this._prevPosIsValid=!1,this._spawnTimer=0,this.emit=void 0===i.emit||!!i.emit,this.autoUpdate=void 0!==i.autoUpdate&&!!i.autoUpdate}},h.recycle=function(t){t.next&&(t.next.prev=t.prev),t.prev&&(t.prev.next=t.next),t==this._activeParticlesLast&&(this._activeParticlesLast=t.prev),t==this._activeParticlesFirst&&(this._activeParticlesFirst=t.next),t.prev=null,t.next=this._poolFirst,this._poolFirst=t,this._parentIsPC?(t.alpha=0,t.visible=!1):t.parent&&t.parent.removeChild(t),--this.particleCount},h.rotate=function(t){if(this.rotation!=t){var i=t-this.rotation;this.rotation=t,s.rotatePoint(i,this.spawnPos),this._posChanged=!0}},h.updateSpawnPos=function(t,i){this._posChanged=!0,this.spawnPos.x=t,this.spawnPos.y=i},h.updateOwnerPos=function(t,i){this._posChanged=!0,this.ownerPos.x=t,this.ownerPos.y=i},h.resetPositionTracking=function(){this._prevPosIsValid=!1},Object.defineProperty(h,"emit",{get:function(){return this._emit},set:function(t){this._emit=!!t,this._emitterLife=this.emitterLifetime}}),Object.defineProperty(h,"autoUpdate",{get:function(){return this._autoUpdate},set:function(t){this._autoUpdate&&!t?n.remove(this.update,this):!this._autoUpdate&&t&&n.add(this.update,this),this._autoUpdate=!!t}}),h.update=function(t){if(this._autoUpdate&&(t=t/n.speed/PIXI.settings.TARGET_FPMS/1e3),this._parent){var i,e,s;for(e=this._activeParticlesFirst;e;e=s)s=e.next,e.update(t);var a,r;this._prevPosIsValid&&(a=this._prevEmitterPos.x,r=this._prevEmitterPos.y);var o=this.ownerPos.x+this.spawnPos.x,h=this.ownerPos.y+this.spawnPos.y;if(this.emit)for(this._spawnTimer-=t;this._spawnTimer<=0;){if(this._emitterLife>0&&(this._emitterLife-=this._frequency,this._emitterLife<=0)){this._spawnTimer=0,this._emitterLife=0,this.emit=!1;break}if(this.particleCount>=this.maxParticles)this._spawnTimer+=this._frequency;else{var l;if(l=this.minLifetime==this.maxLifetime?this.minLifetime:Math.random()*(this.maxLifetime-this.minLifetime)+this.minLifetime,-this._spawnTimer<l){var p,c;if(this._prevPosIsValid&&this._posChanged){var d=1+this._spawnTimer/t;p=(o-a)*d+a,c=(h-r)*d+r}else p=o,c=h;i=0;for(var u=Math.min(this.particlesPerWave,this.maxParticles-this.particleCount);i<u;++i){var m,f;if(this._poolFirst?(m=this._poolFirst,this._poolFirst=this._poolFirst.next,m.next=null):m=new this.particleConstructor(this),this.particleImages.length>1?m.applyArt(this.particleImages.random()):m.applyArt(this.particleImages[0]),m.startAlpha=this.startAlpha,m.endAlpha=this.endAlpha,1!=this.minimumSpeedMultiplier?(f=Math.random()*(1-this.minimumSpeedMultiplier)+this.minimumSpeedMultiplier,m.startSpeed=this.startSpeed*f,m.endSpeed=this.endSpeed*f):(m.startSpeed=this.startSpeed,m.endSpeed=this.endSpeed),m.acceleration.x=this.acceleration.x,m.acceleration.y=this.acceleration.y,m.maxSpeed=this.maxSpeed,1!=this.minimumScaleMultiplier?(f=Math.random()*(1-this.minimumScaleMultiplier)+this.minimumScaleMultiplier,m.startScale=this.startScale*f,m.endScale=this.endScale*f):(m.startScale=this.startScale,m.endScale=this.endScale),m.startColor=this.startColor,m.endColor=this.endColor,this.minRotationSpeed==this.maxRotationSpeed?m.rotationSpeed=this.minRotationSpeed:m.rotationSpeed=Math.random()*(this.maxRotationSpeed-this.minRotationSpeed)+this.minRotationSpeed,m.noRotation=this.noRotation,m.maxLife=l,m.blendMode=this.particleBlendMode,m.ease=this.customEase,m.extraData=this.extraData,this._spawnFunc(m,p,c,i),m.init(),m.update(-this._spawnTimer),this._parentIsPC&&m.parent){var P=this._parent.children;if(P[0]==m)P.shift();else if(P[P.length-1]==m)P.pop();else{var _=P.indexOf(m);P.splice(_,1)}this.addAtBack?P.unshift(m):P.push(m)}else this.addAtBack?this._parent.addChildAt(m,0):this._parent.addChild(m);this._activeParticlesLast?(this._activeParticlesLast.next=m,m.prev=this._activeParticlesLast,this._activeParticlesLast=m):this._activeParticlesLast=this._activeParticlesFirst=m,++this.particleCount}}this._spawnTimer+=this._frequency}}this._posChanged&&(this._prevEmitterPos.x=o,this._prevEmitterPos.y=h,this._prevPosIsValid=!0,this._posChanged=!1)}},h._spawnPoint=function(t,i,e){this.minStartRotation==this.maxStartRotation?t.rotation=this.minStartRotation+this.rotation:t.rotation=Math.random()*(this.maxStartRotation-this.minStartRotation)+this.minStartRotation+this.rotation,t.position.x=i,t.position.y=e},h._spawnRect=function(t,i,e){this.minStartRotation==this.maxStartRotation?t.rotation=this.minStartRotation+this.rotation:t.rotation=Math.random()*(this.maxStartRotation-this.minStartRotation)+this.minStartRotation+this.rotation,l.x=Math.random()*this.spawnRect.width+this.spawnRect.x,l.y=Math.random()*this.spawnRect.height+this.spawnRect.y,0!==this.rotation&&s.rotatePoint(this.rotation,l),t.position.x=i+l.x,t.position.y=e+l.y},h._spawnCircle=function(t,i,e){this.minStartRotation==this.maxStartRotation?t.rotation=this.minStartRotation+this.rotation:t.rotation=Math.random()*(this.maxStartRotation-this.minStartRotation)+this.minStartRotation+this.rotation,l.x=Math.random()*this.spawnCircle.radius,l.y=0,s.rotatePoint(360*Math.random(),l),l.x+=this.spawnCircle.x,l.y+=this.spawnCircle.y,0!==this.rotation&&s.rotatePoint(this.rotation,l),t.position.x=i+l.x,t.position.y=e+l.y},h._spawnRing=function(t,i,e){var a=this.spawnCircle;this.minStartRotation==this.maxStartRotation?t.rotation=this.minStartRotation+this.rotation:t.rotation=Math.random()*(this.maxStartRotation-this.minStartRotation)+this.minStartRotation+this.rotation,a.minRadius==a.radius?l.x=Math.random()*(a.radius-a.minRadius)+a.minRadius:l.x=a.radius,l.y=0;var r=360*Math.random();t.rotation+=r,s.rotatePoint(r,l),l.x+=this.spawnCircle.x,l.y+=this.spawnCircle.y,0!==this.rotation&&s.rotatePoint(this.rotation,l),t.position.x=i+l.x,t.position.y=e+l.y},h._spawnBurst=function(t,i,e,s){0===this.particleSpacing?t.rotation=360*Math.random():t.rotation=this.angleStart+this.particleSpacing*s+this.rotation,t.position.x=i,t.position.y=e},h.cleanup=function(){var t,i;for(t=this._activeParticlesFirst;t;t=i)i=t.next,this.recycle(t),t.parent&&t.parent.removeChild(t);this._activeParticlesFirst=this._activeParticlesLast=null,this.particleCount=0},h.destroy=function(){this.cleanup();for(var t,i=this._poolFirst;i;i=t)t=i.next,i.destroy();this._poolFirst=this._parent=this.particleImages=this.spawnPos=this.ownerPos=this.startColor=this.endColor=this.customEase=null},i.exports=o},{"./Particle":3,"./ParticleUtils":4}],3:[function(t,i,e){var s=t("./ParticleUtils"),a=PIXI.Sprite,r=function(t){a.call(this),this.emitter=t,this.anchor.x=this.anchor.y=.5,this.velocity=new PIXI.Point,this.maxLife=0,this.age=0,this.ease=null,this.extraData=null,this.startAlpha=0,this.endAlpha=0,this.startSpeed=0,this.endSpeed=0,this.acceleration=new PIXI.Point,this.maxSpeed=NaN,this.startScale=0,this.endScale=0,this.startColor=null,this._sR=0,this._sG=0,this._sB=0,this.endColor=null,this._eR=0,this._eG=0,this._eB=0,this._doAlpha=!1,this._doScale=!1,this._doSpeed=!1,this._doAcceleration=!1,this._doColor=!1,this._doNormalMovement=!1,this._oneOverLife=0,this.next=null,this.prev=null,this.init=this.init,this.Particle_init=this.Particle_init,this.update=this.update,this.Particle_update=this.Particle_update,this.applyArt=this.applyArt,this.kill=this.kill},n=r.prototype=Object.create(a.prototype);n.init=n.Particle_init=function(){this.age=0,this.velocity.x=this.startSpeed,this.velocity.y=0,s.rotatePoint(this.rotation,this.velocity),this.noRotation?this.rotation=0:this.rotation*=s.DEG_TO_RADS,this.rotationSpeed*=s.DEG_TO_RADS,this.alpha=this.startAlpha,this.scale.x=this.scale.y=this.startScale,this.startColor&&(this._sR=this.startColor[0],this._sG=this.startColor[1],this._sB=this.startColor[2],this.endColor&&(this._eR=this.endColor[0],this._eG=this.endColor[1],this._eB=this.endColor[2])),this._doAlpha=this.startAlpha!=this.endAlpha,this._doSpeed=this.startSpeed!=this.endSpeed,this._doScale=this.startScale!=this.endScale,this._doColor=!!this.endColor,this._doAcceleration=0!==this.acceleration.x||0!==this.acceleration.y,this._doNormalMovement=this._doSpeed||0!==this.startSpeed||this._doAcceleration,this._oneOverLife=1/this.maxLife,this.tint=s.combineRGBComponents(this._sR,this._sG,this._sB),this.visible=!0},n.applyArt=function(t){this.texture=t||s.EMPTY_TEXTURE},n.update=n.Particle_update=function(t){if(this.age+=t,this.age>=this.maxLife)return this.kill(),-1;var i=this.age*this._oneOverLife;if(this.ease&&(i=4==this.ease.length?this.ease(i,0,1,1):this.ease(i)),this._doAlpha&&(this.alpha=(this.endAlpha-this.startAlpha)*i+this.startAlpha),this._doScale){var e=(this.endScale-this.startScale)*i+this.startScale;this.scale.x=this.scale.y=e}if(this._doNormalMovement){if(this._doSpeed){var a=(this.endSpeed-this.startSpeed)*i+this.startSpeed;s.normalize(this.velocity),s.scaleBy(this.velocity,a)}else if(this._doAcceleration&&(this.velocity.x+=this.acceleration.x*t,this.velocity.y+=this.acceleration.y*t,this.maxSpeed)){var r=s.length(this.velocity);r>this.maxSpeed&&s.scaleBy(this.velocity,this.maxSpeed/r)}this.position.x+=this.velocity.x*t,this.position.y+=this.velocity.y*t}if(this._doColor){var n=(this._eR-this._sR)*i+this._sR,o=(this._eG-this._sG)*i+this._sG,h=(this._eB-this._sB)*i+this._sB;this.tint=s.combineRGBComponents(n,o,h)}return 0!==this.rotationSpeed?this.rotation+=this.rotationSpeed*t:this.acceleration&&!this.noRotation&&(this.rotation=Math.atan2(this.velocity.y,this.velocity.x)),i},n.kill=function(){this.emitter.recycle(this)},n.Sprite_Destroy=a.prototype.destroy,n.destroy=function(){this.parent&&this.parent.removeChild(this),this.Sprite_Destroy&&this.Sprite_Destroy(),this.emitter=this.velocity=this.startColor=this.endColor=this.ease=this.next=this.prev=null},r.parseArt=function(t){var i;for(i=t.length;i>=0;--i)"string"==typeof t[i]&&(t[i]=PIXI.Texture.fromImage(t[i]));if(s.verbose)for(i=t.length-1;i>0;--i)if(t[i].baseTexture!=t[i-1].baseTexture){window.console&&console.warn("PixiParticles: using particle textures from different images may hinder performance in WebGL");break}return t},r.parseData=function(t){return t},i.exports=r},{"./ParticleUtils":4}],4:[function(t,i,e){"use strict";var s=PIXI.BLEND_MODES||PIXI.blendModes,a=PIXI.Texture,r={};r.verbose=!1;var n=r.DEG_TO_RADS=Math.PI/180,o=r.EMPTY_TEXTURE=a.EMPTY;o.on=o.destroy=o.once=o.emit=function(){},r.rotatePoint=function(t,i){if(t){t*=n;var e=Math.sin(t),s=Math.cos(t),a=i.x*s-i.y*e,r=i.x*e+i.y*s;i.x=a,i.y=r}},r.combineRGBComponents=function(t,i,e){return t<<16|i<<8|e},r.normalize=function(t){var i=1/r.length(t);t.x*=i,t.y*=i},r.scaleBy=function(t,i){t.x*=i,t.y*=i},r.length=function(t){return Math.sqrt(t.x*t.x+t.y*t.y)},r.hexToRGB=function(t,i){i?i.length=0:i=[],"#"==t.charAt(0)?t=t.substr(1):0===t.indexOf("0x")&&(t=t.substr(2));var e;return 8==t.length&&(e=t.substr(0,2),t=t.substr(2)),i.push(parseInt(t.substr(0,2),16)),i.push(parseInt(t.substr(2,2),16)),i.push(parseInt(t.substr(4,2),16)),e&&i.push(parseInt(e,16)),i},r.generateEase=function(t){var i=t.length,e=1/i,s=function(s){var a,r,n=i*s|0;return a=(s-n*e)*i,r=t[n]||t[i-1],r.s+a*(2*(1-a)*(r.cp-r.s)+a*(r.e-r.s))};return s},r.getBlendMode=function(t){if(!t)return s.NORMAL;for(t=t.toUpperCase();t.indexOf(" ")>=0;)t=t.replace(" ","_");return s[t]||s.NORMAL},i.exports=r},{}],5:[function(require,module,exports){"use strict";var ParticleUtils=require("./ParticleUtils"),Particle=require("./Particle"),PathParticle=function(t){Particle.call(this,t),this.path=null,this.initialRotation=0,this.initialPosition=new PIXI.Point,this.movement=0},s=Particle.prototype,p=PathParticle.prototype=Object.create(s),helperPoint=new PIXI.Point;p.init=function(){this.initialRotation=this.rotation,this.Particle_init(),this.path=this.extraData.path,this._doNormalMovement=!this.path,this.movement=0,this.initialPosition.x=this.position.x,this.initialPosition.y=this.position.y};for(var MATH_FUNCS=["pow","sqrt","abs","floor","round","ceil","E","PI","sin","cos","tan","asin","acos","atan","atan2","log"],WHITELISTER="[01234567890\\.\\*\\-\\+\\/\\(\\)x ,]",index=MATH_FUNCS.length-1;index>=0;--index)WHITELISTER+="|"+MATH_FUNCS[index];WHITELISTER=new RegExp(WHITELISTER,"g");var parsePath=function(pathString){for(var rtn,matches=pathString.match(WHITELISTER),i=matches.length-1;i>=0;--i)MATH_FUNCS.indexOf(matches[i])>=0&&(matches[i]="Math."+matches[i]);return pathString=matches.join(""),eval("rtn = function(x){ return "+pathString+"; };"),rtn};p.update=function(t){var i=this.Particle_update(t);if(i>=0&&this.path){var e=(this.endSpeed-this.startSpeed)*i+this.startSpeed;this.movement+=e*t,helperPoint.x=this.movement,helperPoint.y=this.path(this.movement),ParticleUtils.rotatePoint(this.initialRotation,helperPoint),this.position.x=this.initialPosition.x+helperPoint.x,this.position.y=this.initialPosition.y+helperPoint.y}},p.Particle_destroy=Particle.prototype.destroy,p.destroy=function(){this.Particle_destroy(),this.path=this.initialPosition=null},PathParticle.parseArt=function(t){return Particle.parseArt(t)},PathParticle.parseData=function(t){var i={};if(t&&t.path)try{i.path=parsePath(t.path)}catch(t){ParticleUtils.verbose&&console.error("PathParticle: error in parsing path expression"),i.path=null}else ParticleUtils.verbose&&console.error("PathParticle requires a path string in extraData!"),i.path=null;return i},module.exports=PathParticle},{"./Particle":3,"./ParticleUtils":4}],6:[function(t,i,e){},{}],7:[function(t,i,e){t("./polyfills.js"),e.ParticleUtils=t("./ParticleUtils.js"),e.Particle=t("./Particle.js"),e.Emitter=t("./Emitter.js"),e.PathParticle=t("./PathParticle.js"),e.AnimatedParticle=t("./AnimatedParticle.js"),t("./deprecation.js")},{"./AnimatedParticle.js":1,"./Emitter.js":2,"./Particle.js":3,"./ParticleUtils.js":4,"./PathParticle.js":5,"./deprecation.js":6,"./polyfills.js":8}],8:[function(t,i,e){Array.prototype.shuffle||Object.defineProperty(Array.prototype,"shuffle",{enumerable:!1,writable:!1,value:function(){for(var t,i,e=this.length;e;t=Math.floor(Math.random()*e),i=this[--e],this[e]=this[t],this[t]=i);return this}}),Array.prototype.random||Object.defineProperty(Array.prototype,"random",{enumerable:!1,writable:!1,value:function(){return this[Math.floor(Math.random()*this.length)]}})},{}],9:[function(t,i,e){"use strict";var s="undefined"!=typeof window?window:GLOBAL;if(s.PIXI.particles||(s.PIXI.particles={}),"undefined"!=typeof i&&i.exports)"undefined"==typeof PIXI&&t("pixi.js"),i.exports=s.PIXI.particles||a;else if("undefined"==typeof PIXI)throw"pixi-particles requires pixi.js to be loaded first";var a=t("./particles");for(var r in a)s.PIXI.particles[r]=a[r]},{"./particles":7,"pixi.js":void 0}]},{},[9])(9)});
+	//# sourceMappingURL=pixi-particles.min.js.map
+
 
 /***/ }
 /******/ ]);
