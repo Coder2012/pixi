@@ -72,7 +72,7 @@ function animate () {
   pool.update()
   elapsed = now
   renderer.render(stage)
-  requestAnimationFrame(animate)
+  window.requestAnimationFrame(animate)
 }
 consts.Events.on(engine, 'collisionStart', function (event) {
   const pairs = event.pairs

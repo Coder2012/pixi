@@ -1,3 +1,5 @@
+import * as Matter from 'matter-js'
+
 // Matter.js module aliases
 const consts = {
   Engine: Matter.Engine,
