@@ -1,21 +1,30 @@
-var path = require('path');
+const webpack = require('webpack')
+const path = require('path')
 
 module.exports = {
-	entry: './js/app.js',
-	output:{
-		filename: 'bundle.js',
-		path: path.resolve(__dirname, 'dist/')
-	},
-		devtool: 'source-map',
-		devServer:{
-			contentBase: 'dist',
-			inline: true
-		},
-	module: {
-         loaders: [{
-             test: /\.js$/,
-             exclude: /node_modules/,
-             loader: 'babel-loader'
-         }]
-     }
+  context: path.resolve(__dirname, 'src'),
+  entry: './js/app.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js'
+  },
+  devtool: 'source-map',
+  devServer: {
+    contentBase: 'dist',
+    inline: true
+  },
+  module: {
+    rules: [{
+      test: /\.js$/,
+      exclude: [/node_modules/],
+      use: [{
+        loader: 'babel-loader',
+        options: {
+          presets: [
+            ['es2015', { modules: false }]
+          ]
+        }
+      }]
+    }]
+  }
 }
