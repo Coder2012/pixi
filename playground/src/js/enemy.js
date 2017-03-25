@@ -3,11 +3,12 @@ import PhysicsSprite from './physicsSprite.js'
 import Particles from './particles.js'
 
 class Enemy extends PhysicsSprite {
-  constructor (id, engine, category) {
+  constructor (id, engine, category, events) {
     super(id, engine, category)
-    this._health = 120
+    this._health = 10
     this._stage = undefined
     this._start = 0
+    this._events = events
   }
 
   init (x, y, width, height, texture, type) {
@@ -18,17 +19,15 @@ class Enemy extends PhysicsSprite {
   }
 
   damage () {
-    this._particles.emit = true
+    this._particles.emit = false
     if (this._health > 0) {
       this._health -= 10
-      let tint = (parseInt(this.sprite.tint) - parseInt(0x001100)).toString(16)
-      this.sprite.tint = '0x' + tint
       this._particles.emitter.maxLifetime = 1 - (this._health / 100)
     } else {
-      this.sprite.tint = 0xff00ff
       this._particles.emit = false
       this.destroy()
     }
+    this._events.emit('scoreIncrease', {value: 10})
   }
 
   get loader () {
@@ -51,20 +50,27 @@ class Enemy extends PhysicsSprite {
     if (this._particles) {
       this._particles.update(value)
     }
-    let w = window.innerWidth / 2
-    let pos = w * Math.sin(this._start) + w
+    let pos = this.x += 8
+
     consts.Body.setPosition(this.body, {
       x: pos,
       y: 120
     })
-    this._start += 0.01
-    consts.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000))
+    this.checkBounds()
+
+    // consts.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000))
   }
+
+  checkBounds () {
+    const w = window.innerWidth
+    if (this.x + this.width > w) {
+      this.x = 0
+    }
+  }
+
   destroy () {
     super.destroy()
-    setTimeout(() => {
-      this.stage.removeChild(this.sprite)
-    }, 1000)
+    this.stage.removeChild(this.sprite)
   }
 }
 export default Enemy

@@ -10,6 +10,7 @@
     "babel-core": "^6.23.1",
     "babel-loader": "^6.3.2",
     "babel-preset-es2015": "^6.22.0",
+    "events2": "^1.1.0",
     "matter-js": "^0.12.0",
     "pixi-particles": "^2.1.1",
     "pixi.js": "^4.4.1",

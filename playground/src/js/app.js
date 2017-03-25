@@ -3,6 +3,9 @@ import consts from './matterConsts.js'
 import Player from './player'
 import BulletPool from './bulletPool.js'
 import Enemy from './enemy.js'
+import Score from './score.js'
+import Events from 'events2'
+import EnemyFactory from './enemyFactory.js'
 
 const canvas = document.getElementById('canvas')
 const innerWidth = window.innerWidth
@@ -25,29 +28,34 @@ const renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, {
 const stage = new PIXI.Container()
 document.body.appendChild(renderer.view)
 
-let enemy, ship, pool, texture, emitter
+let ship, pool, enemyFactory, texture, emitter, score, events
 let elapsed = Date.now()
 
 const colCategory = 0x001
 const colCategory2 = 0x002
 const loader = PIXI.loader
+loader.add('fonts/font.fnt')
 loader.add('images/particle.png')
 loader.add('images/data.json').load(setup)
 
 function setup () {
-  texture = loader.resources['images/data.json'].textures['spacestation.png']
-  enemy = new Enemy('enemy', engine, colCategory)
-  enemy.stage = stage
-  enemy.loader = loader
-  enemy.init(800, 200, 80, 0, texture, 'circle')
+  events = new Events()
+
+  enemyFactory = new EnemyFactory(stage, 8, engine, loader, colCategory, events)
+  enemyFactory.init()
+
   texture = loader.resources['images/data.json'].textures['wship-4.png']
   ship = new Player('player', engine, colCategory2)
-  ship.init(800, window.innerHeight - 100, 34, 72, texture)
+  ship.init(window.innerWidth / 2, window.innerHeight - 100, 34, 72, texture)
+
   pool = new BulletPool(engine, stage)
   pool.init('bullet', colCategory)
-  consts.World.addBody(engine.world, enemy.body)
+
+  score = new Score(events)
+  stage.addChild(score.sprite)
+
   consts.World.addBody(engine.world, ship.body)
-  stage.addChild(enemy.sprite)
+
   stage.addChild(ship.sprite)
   animate()
 }
@@ -56,41 +64,38 @@ function animate () {
   const now = Date.now()
   if (emitter) emitter.update((now - elapsed) * 0.001)
   if (leftKey.isDown) {
-    consts.Body.applyForce(ship.body, ship.body.position, {
-      x: -0.003,
-      y: 0
-    })
+    consts.Body.setPosition(ship.body, { x: ship.body.position.x -= 0.5, y: ship.body.position.y })
   }
   if (rightKey.isDown) {
-    consts.Body.applyForce(ship.body, ship.body.position, {
-      x: 0.003,
-      y: 0
-    })
+    consts.Body.setPosition(ship.body, { x: ship.body.position.x += 0.5, y: ship.body.position.y })
   }
+
+  enemyFactory.update((now - elapsed) * 0.001)
+
   ship.update()
-  enemy.update((now - elapsed) * 0.001)
   pool.update()
   elapsed = now
   renderer.render(stage)
   window.requestAnimationFrame(animate)
 }
+
 consts.Events.on(engine, 'collisionStart', function (event) {
   const pairs = event.pairs
+
   pairs.forEach((collision) => {
     const bodyA = collision.bodyA
     const bodyB = collision.bodyB
-    if (bodyA.label === 'enemy' && collision.bodyB.label.indexOf(
-        'bullet') !== -1) {
+    if (bodyA.label.indexOf('enemy') !== -1 && bodyB.label.indexOf('bullet') !== -1) {
       pool.remove(bodyB.label)
-      if (enemy.body === bodyA) {
-        enemy.damage()
-      }
+      enemyFactory.checkEnemy(bodyA)
     }
   })
 })
+
 const leftKey = keyboard(37)
 const rightKey = keyboard(39)
 const spaceKey = keyboard(32)
+
 spaceKey.release = function () {
   pool.getBullet(ship.body.position)
 }

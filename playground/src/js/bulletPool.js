@@ -8,7 +8,7 @@ class BulletPool {
     this.container = container
     this.size = 8
     this.pool = []
-    this._bullet
+    this._bullet = undefined
     this.texture = PIXI.loader.resources['images/data.json'].textures['player_bullet.png']
   }
 

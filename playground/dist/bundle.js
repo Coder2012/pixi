@@ -18505,12 +18505,13 @@ var Enemy = function (_PhysicsSprite) {
       }
       var w = window.innerWidth / 2;
       var pos = w * Math.sin(this._start) + w;
+      console.log(this._id, pos);
       _matterConsts2.default.Body.setPosition(this.body, {
         x: pos,
         y: 120
       });
       this._start += 0.01;
-      _matterConsts2.default.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000));
+      // consts.Body.setAngularVelocity(this.body, 0 + (120 / 1000 - this._health / 1000))
     }
   }, {
     key: 'destroy',
@@ -49878,14 +49879,14 @@ var engine = _matterConsts2.default.Engine.create({
 });
 
 var bodies = [];
+var enemies = [];
 var renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, {
   backgroundColor: 0x000000
 });
 var stage = new PIXI.Container();
 document.body.appendChild(renderer.view);
 
-var enemy = void 0,
-    ship = void 0,
+var ship = void 0,
     pool = void 0,
     texture = void 0,
     emitter = void 0;
@@ -49898,19 +49899,29 @@ loader.add('images/particle.png');
 loader.add('images/data.json').load(setup);
 
 function setup() {
-  texture = loader.resources['images/data.json'].textures['spacestation.png'];
-  enemy = new _enemy2.default('enemy', engine, colCategory);
-  enemy.stage = stage;
-  enemy.loader = loader;
-  enemy.init(800, 200, 80, 0, texture, 'circle');
+  texture = loader.resources['images/data.json'].textures['blueship4.png'];
+
+  for (var i = 0; i < 8; i++) {
+    var enemy = new _enemy2.default('enemy_' + i, engine, colCategory);
+    enemy.stage = stage;
+    enemy.loader = loader;
+    console.log(i * 100);
+    enemy.init(i * 100, 200, 56, 105, texture);
+
+    stage.addChild(enemy.sprite);
+    _matterConsts2.default.World.addBody(engine.world, enemy.body);
+    enemies.push(enemy);
+  }
+
   texture = loader.resources['images/data.json'].textures['wship-4.png'];
   ship = new _player2.default('player', engine, colCategory2);
   ship.init(800, window.innerHeight - 100, 34, 72, texture);
+
   pool = new _bulletPool2.default(engine, stage);
   pool.init('bullet', colCategory);
-  _matterConsts2.default.World.addBody(engine.world, enemy.body);
+
   _matterConsts2.default.World.addBody(engine.world, ship.body);
-  stage.addChild(enemy.sprite);
+
   stage.addChild(ship.sprite);
   animate();
 }
@@ -49930,8 +49941,12 @@ function animate() {
       y: 0
     });
   }
+
+  for (var i = 0; i < 8; i++) {
+    enemies[i].update((now - elapsed) * 0.001);
+  }
+
   ship.update();
-  enemy.update((now - elapsed) * 0.001);
   pool.update();
   elapsed = now;
   renderer.render(stage);
@@ -49944,9 +49959,9 @@ _matterConsts2.default.Events.on(engine, 'collisionStart', function (event) {
     var bodyB = collision.bodyB;
     if (bodyA.label === 'enemy' && collision.bodyB.label.indexOf('bullet') !== -1) {
       pool.remove(bodyB.label);
-      if (enemy.body === bodyA) {
-        enemy.damage();
-      }
+      // if (enemy.body === bodyA) {
+      //   enemy.damage()
+      // }
     }
   });
 });

@@ -6,6 +6,7 @@ class PhysicsSprite {
     this._id = id
     this._engine = engine
     this.category = category
+    this.isAlive = true
   }
   init (x, y, width, height, texture, type) {
     this.x = x
@@ -19,7 +20,7 @@ class PhysicsSprite {
   }
   createPhysics () {
     let options = {
-      frictionAir: 0.1,
+      frictionAir: 0.2,
       friction: 1,
       inertia: Infinity,
       isSensor: true,
@@ -66,6 +67,7 @@ class PhysicsSprite {
     }
   }
   destroy () {
+    this.isAlive = false
     consts.World.remove(this._engine.world, this._body)
   }
 }

@@ -9,7 +9,7 @@ class PlayerBullet extends PhysicsSprite {
   }
   spawn (position) {
     this._alive = true
-    consts.Body.setPosition(this.body, position)
+    consts.Body.setPosition(this.body, {x: position.x, y: position.y -40})
   }
   get alive () {
     return this._alive
@@ -24,12 +24,12 @@ class PlayerBullet extends PhysicsSprite {
     if (this.alive === true) {
       consts.Body.applyForce(this.body, this.body.position, {
         x: 0,
-        y: -0.008
+        y: -0.010
       })
     } else {
       consts.Body.setPosition(this.body, {
-        x: 50,
-        y: 50
+        x: 0,
+        y: 0
       })
     }
     super.update()
