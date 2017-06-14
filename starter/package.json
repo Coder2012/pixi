@@ -13,7 +13,6 @@
     "copy-webpack-plugin": "~2.1.6",
     "events2": "^1.1.0",
     "keyboardjs": "^2.3.3",
-    "matter-js": "^0.12.0",
     "pixi-particles": "^2.1.1",
     "pixi.js": "^4.4.1",
     "standard": "^9.0.0",
