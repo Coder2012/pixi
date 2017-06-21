@@ -1,0 +1,87 @@
+{
+  "frames": {
+    "pixijs.png": {
+      "frame": {
+        "x": 1,
+        "y": 1,
+        "w": 315,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 315,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 315,
+        "h": 116
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bitcoin.jpg": {
+      "frame": {
+        "x": 1,
+        "y": 119,
+        "w": 736,
+        "h": 736
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 736,
+        "h": 736
+      },
+      "sourceSize": {
+        "w": 736,
+        "h": 736
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "illuminati.png": {
+      "frame": {
+        "x": 1,
+        "y": 857,
+        "w": 162,
+        "h": 176
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 8,
+        "y": 2,
+        "w": 162,
+        "h": 176
+      },
+      "sourceSize": {
+        "w": 178,
+        "h": 178
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  },
+  "meta": {
+    "app": "http://free-tex-packer.com/",
+    "version": "0.2.4",
+    "image": "data.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 738,
+      "h": 1034
+    },
+    "scale": 1
+  }
+}

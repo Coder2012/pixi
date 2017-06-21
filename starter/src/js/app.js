@@ -1,27 +1,43 @@
 import * as PIXI from 'pixi.js'
 import keyboardJS from 'keyboardjs'
+import Test from './test.js'
 
-const canvas = document.getElementById('canvas')
-const innerWidth = window.innerWidth
-const innerHeight = window.innerHeight
-
-const renderer = PIXI.autoDetectRenderer(innerWidth, innerHeight, {
-  backgroundColor: 0x000000
+const app = new PIXI.Application({
+  width: window.innerWidth,
+  height: window.innerHeight
 })
 
-const stage = new PIXI.Container()
-document.body.appendChild(renderer.view)
+document.body.appendChild(app.view)
 
-let elapsed = Date.now()
 
-const loader = PIXI.loader
+const loader = app.loader
 loader.add('fonts/font.fnt')
-loader.add('images/particle.png').load(setup)
-// loader.add('images/data.json')
+loader.add('images/data.json').load(setup)
 
 function setup () {
+  console.log('application setup')
+
+  const pixijs = new PIXI.Sprite(loader.resources['images/data.json'].textures['pixijs.png'])
+  const bitcoin = new PIXI.Sprite(loader.resources['images/data.json'].textures['bitcoin.jpg'])
+  const illuminati = new PIXI.Sprite(loader.resources['images/data.json'].textures['illuminati.png'])
+
+  bitcoin.y = pixijs.height
+  illuminati.x = ((bitcoin.x + bitcoin.width) * 0.5) - (illuminati.width * 0.5)
+
+  app.stage.addChild(bitcoin)
+  app.stage.addChild(pixijs)
+  app.stage.addChild(illuminati)
+
+  const test = new Test(app.ticker)
+  test.on('event', () => console.log('event received')) 
+
   addKeyboard()
-  animate()
+}
+
+app.ticker.add(animate)
+
+function animate (delta) {
+
 }
 
 function addKeyboard () {
@@ -56,13 +72,4 @@ function bPress () {
 
 function bRelease () {
   console.log('called aRelease function')
-}
-
-function animate () {
-  const now = Date.now()
-  // console.log(elapsed)
-  elapsed = now;
-
-  renderer.render(stage)
-  window.requestAnimationFrame(animate)
 }
