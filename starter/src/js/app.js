@@ -67,9 +67,9 @@ function aRelease () {
 }
 
 function bPress () {
-  console.log('called aPress function')
+  console.log('called bPress function')
 }
 
 function bRelease () {
-  console.log('called aRelease function')
+  console.log('called bRelease function')
 }
