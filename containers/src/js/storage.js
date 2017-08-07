@@ -1,14 +1,17 @@
 import * as PIXI from 'pixi.js'
 
 export default class Storage extends PIXI.Sprite {
-	constructor () {
+	constructor (app, num) {
 		super()
+
+		this._app = app
+		this._num = num
 
 		this.createPlatforms()
 	}
 
 	createPlatforms () {
-		for (var i = 0; i < 4; i++) {
+		for (var i = 0; i < this._num; i++) {
 	    let g = new PIXI.Graphics()
 	    g.interactive = true
 	    g.beginFill(0x004400)
@@ -18,12 +21,12 @@ export default class Storage extends PIXI.Sprite {
 	    g.on('mousedown', this.select, this)
 	    g.on('touchstart', this.select, this)
 	    g.x = i * 126
-	    g.y = innerHeight - 50
+	    g.y = 0
 	    this.addChild(g)
 	  }
 	}
 
 	select (eventData) {
-		this.emit('platform-selected', eventData.currentTarget)
+		this.emit('platform-selected', eventData)
 	}
 }
