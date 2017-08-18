@@ -8,7 +8,7 @@ import Test from './test.js'
 import Crane from './crane.js'
 import Fleet from './fleet.js'
 import Timer from './timer.js'
-import Bank from './bank.js'
+import Bank from './banker.js'
 
 const canvas = document.createElement('canvas');
 
